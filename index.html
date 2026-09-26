@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>헬스장 폐업 생존분석과 선납금 보호를 위한 위험평가</title>
+<meta name="description" content="전국 체력단련장업 인허가 데이터로 헬스장의 퇴출위험을 분석하고, 선납금 보증보험 설계에 참고할 위험등급과 가정하 기대손실 시나리오를 제시한 데이터분석 포트폴리오">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1EF; --panel:#FFFFFF; --ink:#1C2124; --muted:#555D63; --rule:#C9D0CC; --soft:#E1E6E3;
+  --calc:#24292D; --calc-ink:#EEF1EF; --calc-muted:#B3BCC1; --calc-line:#4A5258; --calc-accent:#FF8B80;
+  --c-small:#C4302A; --c-mid:#23549E; --c-large3:#8F6A00; --c-large:#23794E; --c-na:#6F787D;
+  --focus:#23549E;
+  --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#181B1E; --panel:#22272B; --ink:#E7EBE9; --muted:#A3ACB1; --rule:#3A4146; --soft:#2C3237;
+    --calc:#2C3237; --calc-ink:#EEF1EF; --calc-muted:#B3BCC1; --calc-line:#566067; --calc-accent:#FF8B80;
+    --c-small:#EC6A60; --c-mid:#79A6EA; --c-large3:#E0B43E; --c-large:#5CBB8A; --c-na:#9AA3A8;
+    --focus:#79A6EA;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#181B1E; --panel:#22272B; --ink:#E7EBE9; --muted:#A3ACB1; --rule:#3A4146; --soft:#2C3237;
+  --calc:#2C3237; --calc-ink:#EEF1EF; --calc-muted:#B3BCC1; --calc-line:#566067; --calc-accent:#FF8B80;
+  --c-small:#EC6A60; --c-mid:#79A6EA; --c-large3:#E0B43E; --c-large:#5CBB8A; --c-na:#9AA3A8;
+  --focus:#79A6EA;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.75;
+  font-variant-numeric:tabular-nums;word-break:keep-all;overflow-wrap:anywhere}
+a{color:inherit;text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.skip{position:absolute;left:12px;top:-60px;background:var(--panel);padding:8px 12px;border-radius:8px;z-index:20}
+.skip:focus{top:12px}
+.wrap{max-width:1040px;margin:0 auto;padding-left:20px;padding-right:20px}
+.prose{max-width:680px}
+p{margin:0 0 1em}
+h1,h2,h3{line-height:1.3;margin:0}
+h1{font-size:clamp(2rem,5.4vw,3.1rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.5rem;font-weight:700;margin-bottom:.8em;letter-spacing:-.01em}
+h3{font-size:1.08rem;font-weight:700;margin:1.6em 0 .5em}
+.note{font-size:.88rem;color:var(--muted)}
+.num{white-space:nowrap}
+section{padding:64px 0;border-top:1px solid var(--rule)}
+.sec-no{display:block;font-size:.9rem;color:var(--muted);font-weight:500;margin-bottom:6px}
+
+/* 요약 */
+header.hero{padding-top:52px;padding-bottom:48px}
+.lede{font-size:1.12rem;margin-top:18px;max-width:700px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 28px;margin:28px 0 0;padding:0}
+.facts dt{font-size:.82rem;color:var(--muted)}
+.facts dd{margin:0;font-weight:500;font-size:.95rem}
+.findings{margin-top:34px;border-top:2px solid var(--ink);padding-top:18px}
+.findings h2{font-size:1.1rem;margin-bottom:10px}
+.findings ul{margin:0;padding-left:1.1em}
+.findings li{margin-bottom:.7em;max-width:760px}
+.scope{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;margin-top:22px}
+.scope div{background:var(--panel);border-radius:12px;padding:16px 18px}
+.scope b{display:block;margin-bottom:4px}
+.scope p{margin:0;font-size:.95rem}
+nav.toc{margin-top:26px}
+nav.toc ol{display:flex;flex-wrap:wrap;gap:6px 8px;list-style:none;padding:0;margin:0;counter-reset:t 1}
+nav.toc li{counter-increment:t}
+nav.toc a{display:inline-block;text-decoration:none;font-size:.88rem;padding:5px 12px;border-radius:999px;background:var(--soft)}
+nav.toc a::before{content:counter(t) " ";color:var(--muted)}
+nav.toc a:hover{background:var(--rule)}
+
+/* 그림 공통 */
+.fig{background:var(--panel);border-radius:14px;padding:18px 18px 14px;margin:20px 0 10px}
+.fig-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:8px 16px;margin-bottom:6px}
+.fig-title{font-weight:700;max-width:640px}
+.fig-sub{font-size:.85rem;color:var(--muted);margin:2px 0 6px}
+.chart{width:100%;min-height:120px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.86rem;color:var(--muted);margin-top:8px}
+.legend span::before{content:"";display:inline-block;width:16px;height:3px;border-radius:2px;background:var(--lc);vertical-align:middle;margin-right:6px}
+.legend .dash::before{background:repeating-linear-gradient(90deg,var(--lc) 0 4px,transparent 4px 7px)}
+.legend .band::before{height:10px;background:var(--lc);opacity:.25}
+.legend .dot::before{width:10px;height:10px;border-radius:50%}
+.legend .ring::before{width:10px;height:10px;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 2px var(--lc)}
+.seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:3px;flex-shrink:0}
+.seg button{appearance:none;border:0;background:transparent;font:inherit;font-size:.85rem;color:var(--muted);padding:6px 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);font-weight:500}
+.keybox{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px 20px;font-size:.86rem;background:var(--soft);
+  border-radius:10px;padding:10px 14px;margin:8px 0 4px}
+.keybox b{font-weight:500;color:var(--muted);margin-right:6px}
+.grid{stroke:var(--soft);stroke-width:1}
+.axis{fill:var(--muted);font-size:12px;font-family:var(--font)}
+.lbl{fill:var(--ink);font-size:13px;font-family:var(--font)}
+.lbl-g{fill:var(--muted);font-size:12px;font-family:var(--font)}
+.ref{stroke:var(--muted);stroke-dasharray:3 4}
+.guide{stroke:var(--muted);stroke-width:1}
+#tip{position:fixed;z-index:30;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.82rem;line-height:1.5;
+  padding:8px 10px;border-radius:8px;max-width:280px}
+
+/* 표 */
+.tbl-wrap{overflow-x:auto;margin:14px 0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.9rem;background:var(--panel)}
+.tbl-wrap table{border-radius:12px;overflow:hidden}
+caption{caption-side:top;text-align:left;font-weight:700;padding:0 0 8px;font-size:.92rem}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--soft);vertical-align:middle}
+th{font-weight:500;color:var(--muted);font-size:.83rem}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:0}
+.heat td.cell{text-align:center;min-width:140px}
+.heat th.c{text-align:center}
+.heat .idx{font-size:1.2rem;font-weight:700;display:block}
+.heat .rt{font-size:.8rem}
+.ok{color:var(--c-large);font-weight:500;white-space:nowrap}
+.warn{color:var(--c-small);font-weight:500;white-space:nowrap}
+
+details{background:var(--panel);border-radius:12px;margin:14px 0;padding:0 16px}
+details summary{cursor:pointer;padding:13px 0;font-weight:500;list-style-position:inside}
+details[open] summary{border-bottom:1px solid var(--soft);margin-bottom:10px}
+details > :last-child{margin-bottom:14px}
+details table{font-size:.85rem}
+
+.flow{display:grid;grid-template-columns:repeat(5,1fr);margin:18px 0;font-size:.88rem;background:var(--panel);border-radius:12px;overflow:hidden}
+.flow div{padding:10px 12px;border-right:1px solid var(--soft)}
+.flow div:last-child{border-right:0;box-shadow:inset 0 -3px 0 var(--ink)}
+.flow b{display:block;font-size:1.1rem}
+.flow span{color:var(--muted)}
+.callout{border-left:4px solid var(--ink);padding:4px 0 4px 16px;margin:20px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}
+.two > div{background:var(--panel);border-radius:12px;padding:16px 18px}
+.two h3{margin-top:0}
+ul.plain{padding-left:1.1em;margin:0}
+ul.plain li{margin-bottom:.5em}
+
+/* 계산기 */
+.calc{background:var(--calc);color:var(--calc-ink);border-radius:20px;padding:24px;margin:26px 0 10px;
+  --c-small:#EC6A60;--c-mid:#79A6EA;--c-large3:#E0B43E;--c-large:#5CBB8A;--c-na:#9AA3A8}
+.calc h3{margin:0 0 4px;font-size:1.15rem}
+.calc .sub{color:var(--calc-muted);font-size:.9rem;margin-bottom:18px}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.field{margin-bottom:18px}
+.field > label,.field > .lab{display:flex;justify-content:space-between;font-weight:500;margin-bottom:8px}
+.areas{display:flex;flex-wrap:wrap;gap:8px}
+.area-btn{--pc:var(--c-na);appearance:none;border:0;cursor:pointer;font:inherit;font-size:.9rem;color:var(--calc-ink);background:transparent;
+  padding:7px 13px 7px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;box-shadow:inset 0 0 0 1.5px var(--calc-line)}
+.area-btn::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--pc)}
+.area-btn[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--calc-ink);background:#ffffff18}
+.area-btn[aria-pressed="true"]::after{content:"✓";font-size:.8rem}
+input[type=range]{width:100%;accent-color:var(--calc-accent)}
+.money{display:flex;align-items:center;gap:8px}
+.money input{width:170px;font:inherit;padding:8px 12px;border-radius:10px;border:1.5px solid var(--calc-line);background:#1A1E21;color:var(--calc-ink)}
+.money input[aria-invalid="true"]{border-color:var(--calc-accent)}
+.err{color:var(--calc-accent);font-size:.85rem;min-height:1.3em;margin-top:6px}
+.out{background:#ffffff0f;border-radius:14px;padding:18px 20px}
+.out .k{font-size:.88rem;color:var(--calc-muted)}
+.out .v{font-size:clamp(2rem,6vw,2.8rem);font-weight:700;line-height:1.15;margin:2px 0 10px}
+.out .v.loss{font-size:clamp(1.5rem,4.5vw,2rem)}
+.assume{font-size:.84rem;color:var(--calc-muted);margin:0 0 12px}
+.cmp{border-top:1px solid #ffffff26;padding-top:12px;font-size:.88rem;color:var(--calc-muted)}
+.cmp b{color:var(--calc-ink);font-weight:500}
+.calc .chart .axis{fill:var(--calc-muted)}
+.calc .chart .grid{stroke:#ffffff1c}
+.calc .chart .lbl{fill:var(--calc-ink)}
+.calc-fig{margin-top:18px}
+
+footer{padding-top:36px;padding-bottom:60px;border-top:1px solid var(--rule);font-size:.86rem;color:var(--muted)}
+footer code{font-size:.78rem;word-break:break-all}
+
+@media (max-width:820px){
+  body{font-size:16px}
+  section{padding:48px 0}
+  .scope,.two,.calc-grid{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr 1fr}
+  .flow div{border-bottom:1px solid var(--soft)}
+  .calc{padding:20px 16px}
+}
+@media print{
+  nav.toc,.seg,#tip,.skip{display:none}
+  details{display:block}
+  section{break-inside:avoid-page}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#question">본문으로 건너뛰기</a>
+<div id="tip" hidden></div>
+
+<header class="hero wrap" id="summary">
+  <h1>헬스장 폐업 생존분석과<br>선납금 보호를 위한 위험평가</h1>
+  <p class="lede">전국 체력단련장업 인허가 기록으로 헬스장이 얼마나 오래 영업하는지, 어떤 특성의 시설이 더 빨리 퇴출되는지 분석했다. 그 결과를 선납 이용료 보증보험 설계에 참고할 위험등급과 가정하 기대손실 시나리오로 정리했다.</p>
+  <dl class="facts">
+    <div><dt>분석 대상</dt><dd>2010년 이후 인허가받은 민간 체력단련장업 18,884곳</dd></div>
+    <div><dt>관측 기간</dt><dd><span class="num">2010-01-01</span> ~ <span class="num">2026-09-23</span></dd></div>
+    <div><dt>데이터</dt><dd>행정안전부 생활_체력단련장업 인허가 데이터(공공데이터포털)</dd></div>
+    <div><dt>방법</dt><dd>카플란-마이어 생존분석, Cox 비례위험모형, 시간 검증, 강건성 분석</dd></div>
+  </dl>
+  <div class="findings">
+    <h2>핵심 발견</h2>
+    <ul>
+      <li>개업 후 5년 동안 영업을 이어간 비율은 82.6%였다. 면적 150㎡ 미만은 77.1%, 600㎡ 이상은 90.6%로 면적이 작을수록 낮았다.</li>
+      <li>개업시기·경쟁·지역을 함께 보정한 Cox 모형에서 150~300㎡ 대비 퇴출 위험비는 150㎡ 미만 1.29(95% CI 1.19~1.40), 600㎡ 이상 0.52(95% CI 0.46~0.59)였다. 150㎡ 미만의 위험비는 개업 후 3년까지 1.49(1.31~1.69), 그 이후 1.18(1.06~1.31)로 초반에 더 컸다.</li>
+      <li>면적 경계와 분할 시점을 바꾼 24개 모형에서 위험 방향은 유지됐다. 반면 과거 기록으로 추정한 3년 퇴출위험(10.3%)은 최근 개업 시설의 실제 값(7.6%)보다 높아, 절대 수치를 그대로 재사용하기는 어렵다.</li>
+    </ul>
+  </div>
+  <div class="scope">
+    <div><b>활용할 수 있는 판단</b><p>면적과 개업 연차를 선납금 보증보험의 위험 구분 후보 변수로 검토할 근거, 그리고 요율의 상대 구조와 기준 수준을 나눠 관리해야 한다는 근거.</p></div>
+    <div><b>이 분석의 범위</b><p>행정상 퇴출(폐업·말소 등)의 위험평가와 가정하 기대손실 시나리오다. 실제 보험료, 선납금 미환급 여부, 인과효과는 판단하지 않는다.</p></div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <ol>
+      <li><a href="#question">문제와 질문</a></li>
+      <li><a href="#data">데이터와 정제</a></li>
+      <li><a href="#survival">생존분석</a></li>
+      <li><a href="#hazard">기간별 위험비</a></li>
+      <li><a href="#temporal">시간 검증</a></li>
+      <li><a href="#robust">강건성</a></li>
+      <li><a href="#grade">위험등급과 계산기</a></li>
+      <li><a href="#use">활용과 한계</a></li>
+      <li><a href="#repro">재현과 검증 기록</a></li>
+    </ol>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<section id="question">
+  <div class="prose">
+    <span class="sec-no">2 문제와 분석 질문</span>
+    <h2>선납금을 보호하려면 먼저 시설이 얼마나 빨리 퇴출되는지 알아야 한다</h2>
+    <p>문화체육관광부 「스포츠 정책비전 2030」(2026. 9. 4.) 12쪽의 '먹튀 방지를 위한 제도 기반 마련'은 헬스장·요가·필라테스장 등이 선납 이용료를 받은 뒤 잠적·폐업하는 문제를 다룬다. 이 문서는 기존 체육시설업에 보증보험을 도입하고(2027년), 영세업자도 가입할 수 있는 저렴한 보증보험상품을 개발·보급하며(2028년), 안심결제서비스 도입을 함께 검토하는(2028년) 계획을 담았다. 요가·필라테스의 체육시설업 편입(2027년)도 계획에 포함됐다. 모두 계획이며, 시행이 확정된 제도는 아니다.</p>
+    <p>보증보험이 계약자에게 지급할 금액은 시설이 선납 기간 안에 퇴출할 가능성과 그때 남은 선납금에 달려 있다. 정책 문서에는 이 퇴출위험에 대한 수치가 없다. 그래서 공공 인허가 데이터로 다음 세 가지를 확인했다.</p>
+    <ul class="plain">
+      <li><b>얼마나 오래 영업하는가</b> 개업 후 시간에 따른 생존확률</li>
+      <li><b>어떤 특성이 퇴출위험과 관련되는가</b> 면적, 개업시기, 주변 경쟁, 지역</li>
+      <li><b>그 관련성이 유지되는가</b> 개업 후 기간, 분석 기준, 개업시기에 따라 달라지는지</li>
+    </ul>
+  </div>
+</section>
+
+<section id="data">
+  <div class="prose">
+    <span class="sec-no">3 데이터와 정제</span>
+    <h2>원자료 27,967건에서 분석 대상 18,884곳을 정했다</h2>
+    <p>행정안전부가 전국 지자체의 체력단련장업 인허가 정보를 모아 공개한 데이터다. 시설마다 인허가일, 영업상태, 폐업일, 면적, 좌표가 있다. 분석 대상 18,884곳 가운데 4,139곳이 관측 기간 안에 퇴출했다.</p>
+  </div>
+  <div class="flow" role="list" aria-label="정제 단계">
+    <div role="listitem"><b>27,967</b><span>원자료</span></div>
+    <div role="listitem"><b>27,942</b><span>민간(사립)만</span></div>
+    <div role="listitem"><b>18,904</b><span>2010년 이후 인허가</span></div>
+    <div role="listitem"><b>18,892</b><span>종료일 결측 제외</span></div>
+    <div role="listitem"><b>18,884</b><span>종료일 ≤ 인허가일 제외</span></div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <caption>분석 정의</caption>
+      <thead><tr><th scope="col">항목</th><th scope="col">정의</th></tr></thead>
+      <tbody>
+        <tr><td>분석 단위</td><td>시설 1곳. 고유 ID는 개방자치단체코드와 관리번호의 조합</td></tr>
+        <tr><td>시작 시점</td><td>인허가일</td></tr>
+        <tr><td>퇴출(주 분석)</td><td>영업상태가 '폐업' 또는 '취소/말소/만료/정지/중지' (4,139곳: 폐업 3,580, 기타 퇴출 상태 559)</td></tr>
+        <tr><td>퇴출(민감도 분석)</td><td>영업상태가 '폐업'인 경우만. 기타 퇴출 상태 시설은 해당 폐업일자에 중도절단</td></tr>
+        <tr><td>중도절단</td><td>영업 중·휴업은 관측종료일(2026-09-23), '제외/삭제/전출'은 폐업일자에서 관측 종료</td></tr>
+        <tr><td>생존기간</td><td>(종료일 − 인허가일) 일수 ÷ 365.25</td></tr>
+        <tr><td>면적 구간</td><td>0 &lt; 면적 &lt; 150㎡, 150 ≤ 면적 &lt; 300㎡, 300 ≤ 면적 &lt; 600㎡, 600 ≤ 면적 &lt; 20,000㎡, 그 밖은 결측(1,639곳)</td></tr>
+        <tr><td>경쟁 시설 수</td><td>개업일에 반경 500m 안에서 영업 중이던 다른 체력단련장 수(0곳, 1~2곳, 3~5곳, 6곳 이상, 좌표 결측)</td></tr>
+        <tr><td>지역</td><td>서울, 경기·인천, 비수도권</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <h3>공식 통계와 맞춰 봤다</h3>
+    <p>이 데이터로 2023년 말 영업 중이던 시설 수를 거꾸로 계산하면 14,604곳으로, e-나라지표의 체력단련장업 14,773개소와 −1.1% 차이다. 2022년 말은 13,331곳으로 공식 통계(12,669개소)보다 +5.2% 많았다.</p>
+    <h3>행정상 퇴출 기록에는 한계가 있다</h3>
+    <p>같은 자치단체에서 같은 날 5건 이상 한꺼번에 기록된 비율은 폐업이 3.3%(118/3,580), 기타 퇴출 상태가 26.5%(148/559)였다. 기타 퇴출 상태의 기록일은 실제 영업 중단일보다 늦은 행정 처리일일 수 있다는 점검 신호다. 실제 폐업일의 오류나 지연을 입증한 것은 아니며, 이 때문에 폐업만 퇴출로 본 민감도 분석을 모든 핵심 결과에 함께 돌렸다.</p>
+  </div>
+  <details>
+    <summary>정제와 변수 정의 세부 사항</summary>
+    <ul class="plain">
+      <li><b>ID 함정</b> 관리번호는 27,967건 중 1,357종류뿐이다. 지자체마다 번호를 따로 매기므로 관리번호만으로 중복을 지우면 대부분의 시설이 사라진다.</li>
+      <li><b>면적 경계값</b> 분석 대상 중 정확히 150㎡인 20곳은 150~300㎡, 300㎡인 22곳은 300~600㎡, 600㎡인 2곳은 600㎡ 이상에 배정됐다. 과거 버전의 코드는 이 44곳을 한 칸 아래 구간에 넣었고, 최종본에서 고쳤다.</li>
+      <li><b>면적 결측 1,639곳의 구성</b> 값이 없거나 숫자가 아님 1,627곳, 0㎡ 3곳, 20,000㎡ 이상 9곳</li>
+      <li><b>경쟁 시설 수 계산</b> 후보는 정제 전 원자료 가운데 좌표와 인허가일이 있는 모든 시설이다. 상대 인허가일이 본인 인허가일 이전이거나 같고, 상대 종료일이 본인 인허가일보다 뒤인 시설만 센다. 상대 종료일은 퇴출·전출이면 폐업일자(없으면 후보에서 제외), 영업 중이면 관측종료일 이후로 둔다. 본인은 제외한다. 좌표는 미터 단위 평면좌표(EPSG:5174)라 직선거리로 계산했다.</li>
+      <li><b>민감도 분석</b> '취소/말소/만료/정지/중지' 시설은 사건이 아니라 해당 폐업일자에 중도절단된다.</li>
+    </ul>
+  </details>
+</section>
+
+<section id="survival">
+  <div class="prose">
+    <span class="sec-no">4 핵심 생존분석</span>
+    <h2>5년 뒤에도 영업 중인 비율은 82.6%였고, 면적이 작을수록 낮았다</h2>
+    <p><b>생존확률</b>은 개업 후 그 시점까지 퇴출하지 않았을 확률이고, 카플란-마이어(KM) 방법으로 중도절단을 반영해 추정했다. <b>누적 퇴출위험</b>은 1에서 생존확률을 뺀 값이다.</p>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><div><div class="fig-title">전체 시설의 생존확률은 개업 후 10년에 63.6%까지 내려갔다</div>
+      <div class="fig-sub">주 분석 KM 추정과 95% 신뢰구간. 점선은 폐업만 퇴출로 본 민감도 분석</div></div></div>
+    <div class="chart" id="ch-km" role="img" aria-label="전체 시설의 개업 후 경과 연수별 생존확률 그래프"></div>
+    <div class="legend"><span style="--lc:var(--ink)">주 분석</span><span class="band" style="--lc:var(--ink)">95% 신뢰구간</span><span class="dash" style="--lc:var(--muted)">폐업만 퇴출로 본 민감도 분석</span></div>
+    <div class="tbl-wrap"><table id="tbl-km"></table></div>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><div><div class="fig-title">면적이 작을수록 생존곡선이 빨리 내려갔다</div>
+      <div class="fig-sub">면적군별 주 분석 KM 추정과 95% 신뢰구간. 면적 결측군은 표에만 표시</div></div></div>
+    <div class="chart" id="ch-area" role="img" aria-label="면적군별 생존확률 그래프"></div>
+    <div class="legend" id="lg-area"></div>
+    <div class="tbl-wrap"><table id="tbl-area"></table></div>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><div><div class="fig-title">그해 초 영업 중이던 시설 중 그해 퇴출한 비율은 1년차 2.1%에서 9년차 5.4%로 올라갔다</div>
+      <div class="fig-sub">개업 연차별 조건부 퇴출 비율. k년차 = (k−1, k]년</div></div>
+      <div class="seg" role="group" aria-label="퇴출 정의 선택"><button type="button" aria-pressed="true" data-life="main">주 분석</button><button type="button" aria-pressed="false" data-life="sens">폐업만</button></div></div>
+    <div class="chart" id="ch-life" role="img" aria-label="개업 연차별 조건부 퇴출 비율 막대그래프"></div>
+    <p class="note" style="margin:8px 0 0">뒤쪽 연차일수록 오래전에 개업한 시설로만 구성되므로, 연차 효과와 개업시기 효과가 섞여 있다.</p>
+  </div>
+</section>
+
+<section id="hazard">
+  <div class="prose">
+    <span class="sec-no">5 비례위험 점검과 기간별 위험비</span>
+    <h2>면적의 상대위험은 개업 후 3년까지 더 컸다</h2>
+    <p><b>위험비(HR)</b>는 다른 변수를 함께 보정했을 때 기준 범주 대비 퇴출이 일어나는 순간적 속도가 몇 배인지를 뜻한다. 퇴출확률이나 인과효과가 아니다.</p>
+    <p>Cox 모형은 위험비가 시간이 지나도 일정하다고 가정한다(비례위험 가정). 전체 기간 모형의 13개 계수를 검정했더니 4개(150㎡ 미만, 300~600㎡, 면적 결측, 2020~22년 개업)에서 p&lt;0.05였다. 위험비 하나로 전체 기간을 요약하기 어려워 개업 후 3년을 기준으로 나눠 다시 추정했다.</p>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><div><div class="fig-title">150㎡ 미만의 위험비는 3년까지 1.49(1.31~1.69), 이후 1.18(1.06~1.31)였고, 600㎡ 이상은 두 기간 모두 약 0.52였다</div></div>
+      <div class="seg" role="group" aria-label="퇴출 정의 선택"><button type="button" aria-pressed="true" data-period="main">주 분석</button><button type="button" aria-pressed="false" data-period="sens">폐업만</button></div></div>
+    <div class="keybox">
+      <div><b>기준 범주</b>150~300㎡, 2015~19년 개업</div>
+      <div><b>동시 보정</b>개업시기, 면적, 경쟁 시설 수, 지역</div>
+      <div><b>기간 분할</b>0~3년은 3년에서 중도절단, 3년 이후는 3년 넘게 영업한 시설만</div>
+    </div>
+    <div class="chart" id="ch-period" role="img" aria-label="개업 후 3년 전후 위험비와 95% 신뢰구간 그래프"></div>
+    <div class="legend"><span class="ring" style="--lc:var(--ink)">개업 후 0~3년</span><span class="dot" style="--lc:var(--ink)">3년 이후</span><span style="--lc:var(--muted)">가로선: 95% 신뢰구간, 점선: 위험비 1</span></div>
+    <p class="note" style="margin:8px 0 0">가로축은 로그 척도다. 2023~26년 개업군은 3년 이후 관측이 짧아 그래프에서 뺐고 표에는 남겼다.</p>
+  </div>
+  <div class="prose">
+    <p>상대위험이 초반에 크다는 뜻이지, 소형 시설의 퇴출이 초반에 더 자주 일어난다는 뜻은 아니다. 100곳·1년당 퇴출 건수는 모든 면적군에서 3년 이후가 더 높았다(8장 표). 코로나 시기인 2020~22년 개업군은 3년까지 위험비 0.75(0.65~0.85)로 낮았지만 이후에는 1.03(0.91~1.16)로 차이가 사라졌다. 이 차이의 원인은 이 데이터로 구분할 수 없다.</p>
+  </div>
+  <details>
+    <summary>전체 기간 Cox 모형과 비례위험 검정 상세</summary>
+    <p>전체 기간 모형에서는 반경 500m 경쟁 시설 6곳 이상이 1.19(1.07~1.33)(1~5곳은 유의하지 않음), 비수도권 대비 서울이 0.75(0.69~0.82), 경기·인천이 1.09(1.02~1.18)였다.</p>
+    <div class="tbl-wrap"><table id="tbl-coxfull"></table></div>
+    <div class="tbl-wrap"><table id="tbl-period"></table></div>
+    <div class="tbl-wrap"><table id="tbl-ph"></table></div>
+    <p class="note">비례위험 검정 정의: Cox 적합은 Breslow 동점 처리. 순위는 사건이 발생한 행의 생존기간(동점 사건은 각각 한 행)에 매겼고 동점은 평균 순위(scipy.stats.rankdata 기본값). Schoenfeld 잔차는 사건 행마다 x_i − 위험집합의 exp(xβ) 가중평균 (Breslow, 비척도 잔차에 사건수×분산행렬을 곱해 척도화). Grambsch-Therneau 근사식(lifelines proportional_hazard_test와 같은 식). R survival 3.x의 cox.zph 정확 score 검정과는 다름. 개별 계수별 자유도 1 검정 (변수 묶음 검정 아님). 모든 계산은 직접 구현했고 표준 생존분석 라이브러리로는 재계산하지 못했다.</p>
+  </details>
+</section>
+
+<section id="temporal">
+  <div class="prose">
+    <span class="sec-no">6 시간 검증</span>
+    <h2>과거 기록으로 만든 위험 순서는 대체로 맞았지만, 수준은 맞지 않았다</h2>
+    <p>2018년 말에 알 수 있던 기록만으로 면적별 3년 누적 퇴출위험을 추정하고, 그 뒤에 개업한 시설의 실제 결과와 비교했다.</p>
+  </div>
+  <div class="keybox">
+    <div><b>학습</b>2010~2018년 인허가 6,443곳, <span class="num">2018-12-31</span>까지의 퇴출만 사용(그 이후 퇴출 1,759건은 쓰지 않음)</div>
+    <div><b>검증</b>2019년 이후 인허가 중 3년 이상 관측할 수 있는 7,667곳(최근 인허가일 <span class="num">2023-09-22</span>)</div>
+    <div><b>제외</b>2019년 이후 인허가지만 관측 기회가 3년 미만인 4,770곳</div>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><div><div class="fig-title">모든 면적군에서 최근 개업 시설의 실제 3년 퇴출위험이 과거 추정보다 낮았다</div>
+      <div class="fig-sub">면적군별 3년 누적 퇴출위험(1 − KM 생존확률)과 95% 신뢰구간</div></div></div>
+    <div class="chart" id="ch-temporal" role="img" aria-label="면적군별 3년 누적 퇴출위험의 과거 추정과 최근 실제 비교 그래프"></div>
+    <div class="legend"><span class="ring" style="--lc:var(--ink)">2018년 말 기록으로 추정</span><span class="dot" style="--lc:var(--ink)">2019년 이후 개업 시설의 실제</span></div>
+    <div class="tbl-wrap"><table id="tbl-temporal"></table></div>
+  </div>
+  <div class="two">
+    <div>
+      <h3>유지된 것</h3>
+      <ul class="plain">
+        <li>면적이 기록된 네 군 가운데 150㎡ 미만이 가장 위험하다는 순서</li>
+        <li>네 면적군의 위험 순위상관 0.80. 네 개 집단의 순위가 비슷하다는 뜻이며 개별 시설 예측 정확도가 아니다.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>달라진 것</h3>
+      <ul class="plain">
+        <li>검증군의 면적 구성으로 가중한 3년 위험: 과거 추정 10.3%, 실제 7.6% (차이 −2.7%p)</li>
+        <li>과거 추정에서는 600㎡ 이상이 300~600㎡보다 조금 높아 중형과 대형의 점추정 순서가 바뀌었다. 두 군의 신뢰구간은 크게 겹친다.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:18px">
+    <p>기타 퇴출 상태를 빼고 폐업만 퇴출로 봐도 과거 추정 9.8%, 실제 7.3%로 차이가 남았다. 행정 처리 시점의 영향만으로는 설명하기 어렵지만, 원인을 확정하지는 못한다.</p>
+    <p class="note">현재 스냅샷에서 과거 시점을 재구성한 검증이다. 과거의 면적 변경이나 당시 누락된 기록까지 복원한 전향 검증은 아니다.</p>
+  </div>
+</section>
+
+<section id="robust">
+  <div class="prose">
+    <span class="sec-no">7 강건성 검증</span>
+    <h2>면적 경계와 분할 시점을 바꿔도 위험 방향은 유지됐다</h2>
+    <p>150㎡·300㎡·600㎡라는 면적 경계와 3년이라는 분할 시점이 결과를 유리하게 만든 선택인지 점검했다. 면적 경계 3안(125/250/500, 150/300/600, 175/350/700㎡)과 분할 시점 4안(2·3·4·5년)을 조합해 앞뒤 구간에서 각각 Cox 모형을 적합했다(24개 모형). 보정 변수는 같다. 각 경계안에서 가장 작은 구간을 소형, 두 번째 구간을 기준 범주, 세 번째를 중형, 가장 큰 구간을 대형이라 부른다.</p>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><div><div class="fig-title">24개 모형 모두에서 소형은 기준보다 높고 대형은 낮았다. 후반 소형은 12개 중 2개에서 신뢰구간이 1을 포함했다</div>
+      <div class="fig-sub">점 하나가 경계안 × 분할 시점 한 조합의 위험비. 속이 빈 점은 95% 신뢰구간이 1을 포함한 경우</div></div></div>
+    <div class="chart" id="ch-robust" role="img" aria-label="24개 모형의 면적군별 위험비 분포 그래프"></div>
+    <div class="legend"><span class="dot" style="--lc:var(--ink)">신뢰구간이 1을 포함하지 않음</span><span class="ring" style="--lc:var(--ink)">신뢰구간이 1을 포함</span></div>
+  </div>
+  <div class="prose">
+    <p>150㎡ 미만 구간의 위험비가 후반보다 초반에 큰 패턴도 12개 설정 중 12개에서 유지됐다. 다만 경계를 바꾸면 비교 집단 자체가 달라지므로 위험비의 범위를 하나의 집단에 대한 신뢰구간처럼 읽으면 안 되고, 여러 설정은 서로 독립된 반복실험도 아니다.</p>
+  </div>
+  <details>
+    <summary>24개 모형의 전체 결과표</summary>
+    <div class="tbl-wrap"><table id="tbl-robust"></table></div>
+  </details>
+</section>
+
+<section id="grade">
+  <div class="prose">
+    <span class="sec-no">8 위험등급과 선납금 계산기</span>
+    <h2>면적과 개업 연차로 나눈 퇴출 발생률은 구간 사이에 약 3.8배 차이가 났다</h2>
+    <p>이 페이지의 지표들은 서로 다른 양이다. 같은 척도로 비교하지 않도록 정리해 둔다.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <caption>지표 구분</caption>
+      <thead><tr><th scope="col">지표</th><th scope="col">뜻</th><th scope="col">쓰인 곳</th></tr></thead>
+      <tbody>
+        <tr><td>생존확률</td><td>개업 후 t시점까지 퇴출하지 않았을 확률(KM 추정)</td><td>4장 곡선, 계산기</td></tr>
+        <tr><td>누적 퇴출위험</td><td>1 − 생존확률. t시점까지 퇴출했을 확률</td><td>6장 시간 검증</td></tr>
+        <tr><td>퇴출 발생률</td><td>100곳이 1년 영업하는 동안 생긴 퇴출 건수(100곳·년당). 확률이 아니다</td><td>아래 등급표</td></tr>
+        <tr><td>위험비(HR)</td><td>다른 변수를 보정한 기준 범주 대비 순간 퇴출 속도의 비</td><td>5장, 7장</td></tr>
+        <tr><td>상대위험지수</td><td>구간 발생률 ÷ 전체 발생률 × 100. 보정하지 않은 값으로 위험비와 다르다</td><td>아래 등급표</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-wrap">
+    <table class="heat" id="tbl-heat"></table>
+  </div>
+  <div class="prose">
+    <p>면적 결측군을 빼면 발생률이 가장 높은 구간(3년 넘게 영업한 150㎡ 미만, 지수 152)과 가장 낮은 구간(3년 이내 600㎡ 이상, 지수 40)은 약 3.8배 차이다. 보정하지 않은 값이고, 3년 이후 구간에는 오래전에 개업한 시설의 비중이 커서 지금 개업하는 시설의 미래 위험을 그대로 대표하지 않는다.</p>
+  </div>
+
+  <div class="calc" id="calc">
+    <h3>선납 기간 동안의 퇴출확률과 가정하 기대손실</h3>
+    <p class="sub">면적군별 KM 생존함수(반올림 전 값)로 계산한다. 개별 시설이 아니라 같은 조건 시설들의 평균이다.</p>
+    <div class="calc-grid">
+      <div>
+        <div class="field">
+          <span class="lab" id="area-lab">면적</span>
+          <div class="areas" role="group" aria-labelledby="area-lab" id="areas"></div>
+        </div>
+        <div class="field">
+          <label for="age"><span>개업 후 경과 기간</span><span id="age-v"></span></label>
+          <input type="range" id="age" min="0" max="10" step="1" value="1">
+        </div>
+        <div class="field">
+          <label for="months"><span>선납 기간</span><span id="months-v"></span></label>
+          <input type="range" id="months" min="1" max="24" step="1" value="12">
+        </div>
+        <div class="field">
+          <label for="price"><span>선납금</span></label>
+          <div class="money"><input type="text" id="price" value="600000" inputmode="numeric" aria-describedby="price-err"><span>원</span></div>
+          <div class="err" id="price-err" role="alert"></div>
+        </div>
+      </div>
+      <div class="out" aria-live="polite">
+        <div class="k">선납 기간 안에 퇴출할 확률</div>
+        <div class="v" id="r-prob">–</div>
+        <div class="k">가정하 기대손실(계약 1건당)</div>
+        <div class="v loss" id="r-loss">–</div>
+        <p class="assume">퇴출 시 미사용 선납금 전액을 회수하지 못하고 전액 보상받는다는 가정의 계약당 기대손실입니다. 실제 보험료는 아닙니다.</p>
+        <div class="cmp" id="r-cmp"></div>
+      </div>
+    </div>
+    <div class="calc-fig">
+      <div class="chart" id="ch-calc" role="img" aria-label="선택한 면적군의 생존곡선과 선납 기간"></div>
+      <p class="note" id="calc-cap" style="color:var(--calc-muted);margin:6px 0 0"></p>
+    </div>
+  </div>
+  <details>
+    <summary>계산식과 입력 처리 규칙</summary>
+    <ul class="plain">
+      <li>S(t)는 개월 t 시점의 면적군별 KM 생존확률이며, 시점 t 이전이거나 같은 퇴출까지 반영한다.</li>
+      <li>개업 a개월, 선납 m개월, 선납금 P일 때 퇴출확률 = 1 − S(a+m) / S(a)</li>
+      <li>가정하 기대손실 = Σ(i=1..m) [S(a+i−1) − S(a+i)] / S(a) × P × (m − i + 0.5) / m. 퇴출이 i번째 달 중간에 일어나 남은 기간의 선납금을 잃는다고 본다.</li>
+      <li>평가 끝 시점의 위험집단이 100곳 미만이거나 관측 범위(개업 후 13년)를 넘으면 계산하지 않는다. S(a)가 0이면 계산하지 않는다.</li>
+      <li>중간값은 반올림하지 않고, 화면 표시 단계에서만 확률은 소수 첫째 자리, 금액은 원 단위로 반올림한다.</li>
+      <li>기준 사례(선납금 60만 원, 12개월 선납): 150㎡ 미만·개업 12개월 4.8%·12,381원, 600㎡ 이상·개업 12개월 1.4%·4,496원, 600㎡ 이상·개업 36개월 2.2%·5,511원</li>
+    </ul>
+  </details>
+</section>
+
+<section id="use">
+  <div class="prose">
+    <span class="sec-no">9 활용 범위와 한계</span>
+    <h2>이 결과로 할 수 있는 판단과 할 수 없는 판단</h2>
+  </div>
+  <div class="two">
+    <div>
+      <h3>판단에 쓸 수 있는 것</h3>
+      <ul class="plain">
+        <li>면적과 개업 연차를 보증보험 위험 구분의 후보 변수로 검토하는 근거. 두 정보 모두 인허가 서류에 이미 있다.</li>
+        <li>면적별 상대 구조는 비교적 견고했지만 절대 수준은 개업시기에 따라 달랐다. 요율의 상대 구조와 기준 수준을 나누고, 기준 수준은 최신 기록으로 정기 재산정해야 한다는 근거.</li>
+        <li>퇴출일 기록 품질을 먼저 점검해야 한다는 근거. 기타 퇴출 상태 기록의 26.5%가 같은 날 묶음으로 처리됐다.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>판단할 수 없는 것</h3>
+      <ul class="plain">
+        <li>실제 보험료와 손해율</li>
+        <li>퇴출한 시설이 선납금을 돌려주지 않았는지와 그 규모</li>
+        <li>면적이 퇴출을 일으키는지(인과관계). 자본 규모, 회원 수, 입지, 경영 능력은 관측하지 못했다.</li>
+        <li>개별 시설의 퇴출 예측 정확도</li>
+        <li>인허가 데이터에 없는 요가·필라테스 시설의 위험</li>
+      </ul>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:20px">
+    <h3>보험 설계로 이어가려면 필요한 자료</h3>
+    <p>선납 계약의 금액·기간 분포, 퇴출 시점의 계약 잔액, 환급과 회수 기록, 보험금 청구·지급 기록, 사업자등록 폐업일과의 연계 자료, 영업 중 면적 변경 이력.</p>
+  </div>
+</section>
+
+<section id="repro">
+  <div class="prose">
+    <span class="sec-no">10 재현성과 검증 기록</span>
+    <h2>서로 다른 두 구현이 같은 원자료에서 같은 숫자를 냈다</h2>
+    <p>원자료는 공공데이터포털 '행정안전부_생활_체력단련장업'(2026-09-23 기준) CSV이고, SHA-256은 <code style="font-size:.8rem;word-break:break-all;overflow-wrap:anywhere">cc76b27f6ce5312d7b8b3c5d0aa43f30c6b02d49ae30d1ecc33c79faa660c772</code>이다. 분석 환경은 Python 3.12.3, NumPy 2.4.4, pandas 3.0.2, SciPy 1.17.1. 제출 패키지의 code 폴더에서 step1_survival.py, step3_portfolio_data.py, step4_robustness.py를 차례로 실행하면 results 폴더의 결과 파일이 다시 만들어지고, qa_checks.py와 build_site.py가 검수와 이 페이지 생성을 맡는다. 자세한 순서는 README에 있다.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <caption>검증 기록</caption>
+      <thead><tr><th scope="col">항목</th><th scope="col">방법</th><th scope="col">결과</th></tr></thead>
+      <tbody>
+        <tr><td>정제 행 수, 사건 수, 면적 경계값</td><td>최종 코드 재실행 후 기준값과 대조</td><td class="ok">일치</td></tr>
+        <tr><td>Cox 위험비·p값 (전체, 0~3년, 3년 이후 각 13개 계수)</td><td>두 번째 구현 코드를 같은 환경에서 실행해 대조</td><td class="ok">최대 절대차 6.1e-11</td></tr>
+        <tr><td>비례위험 검정 통계량 (13개 계수)</td><td>같은 근사식의 두 구현 대조</td><td class="ok">최대 절대차 3.3e-10</td></tr>
+        <tr><td>위험등급표 (10개 구간)</td><td>두 구현 대조</td><td class="ok">최대 절대차 2.8e-14</td></tr>
+        <tr><td>시간 검증 (학습·검증 3년 위험, 가중값, 순위상관)</td><td>두 구현 대조</td><td class="ok">일치</td></tr>
+        <tr><td>강건성 (24개 모형 × 4개 면적군 위험비)</td><td>두 구현 대조</td><td class="ok">최대 절대차 5.0e-11</td></tr>
+        <tr><td>계산기 기준 사례 3건</td><td>Python 계산과 웹 계산 대조</td><td class="ok">3건 일치(최대 상대오차 1.5e-18)</td></tr>
+        <tr><td>공식 통계 대조</td><td>e-나라지표 체력단련장업 수와 비교</td><td>2023년 말 −1.1%, 2022년 말 +5.2%</td></tr>
+        <tr><td>표준 라이브러리(statsmodels, lifelines) 재계산</td><td>작업 환경에 설치되어 있지 않음</td><td class="warn">미실행</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p class="note">구현 간 일치는 코드 오류를 줄이는 점검이다. 비례위험 가정, 모형 선택, 보험 실무 타당성까지 검증한 것은 아니다.</p>
+    <h3>프로젝트 기획 및 검증 진행</h3>
+    <p>스포츠산업의 선납금 보호 문제를 출발점으로, 시설의 면적과 영업기간에 따른 퇴출위험을 분석 과제로 설정했다. 원자료와 정제 조건을 제시하고, 두 도구에 독립적인 계산을 요청해 결과를 대조하는 교차검증 과정을 진행했다.</p>
+    <p>수치가 다른 항목은 원인을 확인하도록 재검증을 요청했다. 이후 과거 위험등급이 다른 개업시기에도 유지되는지, 면적 경계와 기간 구분을 바꿔도 결론이 달라지지 않는지를 추가 분석 과제로 제시했다. 제출물에는 주요 발견과 함께 시간 검증에서 확인된 한계, 실제 보험료 산정에 필요한 추가 자료를 명시했다.</p>
+    <p class="note"><strong>AI 지원 범위:</strong> 분석 코드와 웹페이지 구현에는 Claude를, 별도 재현 코드 작성과 결과 대조에는 ChatGPT를 활용했다. 작성자의 역할은 문제 설정, 분석 요구사항 제시, 교차검증 및 추가 검증의 진행이다.</p>
+    <h3>확인한 것과 남은 것</h3>
+    <p>정제 규칙과 분석 결과가 두 구현에서 재현됐고, 면적과 퇴출위험의 관련 방향은 분석 기준과 개업시기를 바꿔도 유지됐다. 표준 라이브러리 재계산, 실제 선납금 손실 자료와의 연결, 2027년 이후 편입될 요가·필라테스 시설에 대한 적용은 아직 확인하지 못했다.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <p>데이터: <a href="https://www.data.go.kr/data/15045048/fileData.do">행정안전부 생활_체력단련장업 인허가 데이터</a>(공공데이터포털, 2026-09-23 기준). 정책: 문화체육관광부 「스포츠 정책비전 2030」(2026. 9. 4.) 12쪽. 공식 통계: <a href="https://www.index.go.kr/unify/idx-info.do?idxCd=1664">e-나라지표 체육시설업 현황</a>(출처 『전국 등록·신고체육시설업현황』).</p>
+  <p>이 페이지의 모든 수치는 제출 패키지의 results 폴더(portfolio_data.json과 CSV)에서 생성됐다.</p>
+</footer>
+
+<script type="application/json" id="portfolio-data">{"meta":{"기준일":"2026-09-23","sha256":"cc76b27f6ce5312d7b8b3c5d0aa43f30c6b02d49ae30d1ecc33c79faa660c772","정제로그":[{"단계":"원자료","행":27967},{"단계":"사립만","행":27942},{"단계":"2010년 이후 인허가","행":18904},{"단계":"종료일자 결측 제외","행":18892},{"단계":"인허가일=폐업일 제외","행":18884}],"분석대상":18884,"퇴출":4139,"폐업":3580,"기타퇴출":559,"면적점검":{"경계값":{"150":{"n":20,"배정":["150-300㎡"]},"300":{"n":22,"배정":["300-600㎡"]},"600":{"n":2,"배정":["600㎡ 이상"]}},"면적_0":3,"면적_20000이상":9,"면적_비수치_또는_결측":1627,"면적결측_합계":1639},"전체발생률_100곳년":4.07481944614554,"재구성_2023":14604,"공식_2023":14773,"재구성_2022":13331,"공식_2022":12669,"공식통계_출처":"e-나라지표 체육시설업 현황(idxCd=1664), 체력단련장업 2022년 12,669개소·2023년 14,773개소","관리번호종류":1357,"원자료행":27967,"민감도_비사건_종료처리":"'취소/말소/만료/정지/중지' 시설은 민감도 분석에서 사건이 아니며, 해당 폐업일자(행정 처리일)에 중도절단","PH방법":{"Cox 동점 처리":"Breslow","순위 대상":"사건이 발생한 행의 생존기간(동점 사건은 각각 한 행)","동점 순위":"평균 순위(scipy.stats.rankdata 기본값)","Schoenfeld 잔차":"사건 행마다 x_i − 위험집합의 exp(xβ) 가중평균 (Breslow, 비척도 잔차에 사건수×분산행렬을 곱해 척도화)","검정 형태":"Grambsch-Therneau 근사식(lifelines proportional_hazard_test와 같은 식). R survival 3.x의 cox.zph 정확 score 검정과는 다름","검정 단위":"개별 계수별 자유도 1 검정 (변수 묶음 검정 아님)"}},"months":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156],"km":{"main":{"S":[1.0,0.9980896086890493,0.9968095573945123,0.9953605002334811,0.9939042153122908,0.992384464427216,0.9912931663837448,0.9892632206745117,0.9872224199959412,0.9854446598972856,0.9839882160804411,0.9817368201371532,0.9786789249837247,0.9763464581283767,0.9737118768168276,0.9720901420863957,0.9699804188431639,0.9674410695299216,0.9645300858385631,0.9617759955364094,0.9593019464860244,0.956256909848307,0.9529973238673889,0.9498928738463557,0.9460130535477993,0.9420430357400429,0.9383587160717032,0.9359260567018589,0.9325000101526114,0.9300822785477038,0.9273729290068966,0.9239655931093944,0.9213305401880733,0.918598252717422,0.9158422632964114,0.9118657028219254,0.9082042547509298,0.9040146600428732,0.9008570199914016,0.8985318693647661,0.8957364215329864,0.8924643991108014,0.8892280772483445,0.886024062140718,0.8836283659304044,0.880270310086091,0.8768563793164078,0.8730691420980347,0.8680877308809474,0.8656139764565409,0.8611063447923751,0.8570377884535019,0.8536006637273862,0.8494929948638642,0.8470917690122135,0.843486087513457,0.839716503891171,0.837297455915131,0.8334019774859366,0.8303082355145354,0.8263755581026598,0.8226877414243613,0.8193509542087367,0.8169906909478882,0.8128164639741422,0.8092082780351828,0.8065134991232131,0.8038922139272141,0.8013454708594804,0.797977484144249,0.7945616690051385,0.7899417876688684,0.786653722056019,0.7839167564283153,0.7796900332720837,0.7763821733589016,0.7724058512751787,0.7687598392868634,0.7650635118848924,0.7629912232501161,0.7593224933937434,0.756663785520022,0.7535610958103245,0.7501409077269003,0.7458433280175163,0.7420576989206235,0.7390846798367537,0.7352185540452192,0.7315905589505504,0.7284859348978534,0.7260842014763276,0.7241003730506426,0.7205443589120527,0.7166187510807792,0.7140726064224469,0.7093843871491123,0.7057855280507139,0.7021537736128247,0.6983134989544779,0.6950993715134104,0.6925272353043805,0.6899256236563922,0.6869374319930165,0.6842599101952959,0.6801075414634539,0.6775581350902337,0.6743941522305439,0.6713809502683017,0.6677515373884995,0.6640888480982038,0.6611457991911575,0.6589495925576809,0.6573280942907922,0.654441310721743,0.6525614850741934,0.6497857108499855,0.6478327596547694,0.6456370714771504,0.6422505089342224,0.6388049797639552,0.6357681979362999,0.6329311225941728,0.6300664255886024,0.6252238705257744,0.6222588141924014,0.6202200312649,0.6170924991300994,0.6152310903828202,0.6125197241082099,0.6091916426226647,0.6066431962261075,0.6043130320003371,0.6025169501450328,0.6000825780227709,0.5966455896293167,0.5941059711801587,0.5918252965496338,0.5894950126094011,0.5863983322698386,0.5842699845143904,0.5828239603041316,0.5813375985863052,0.5786705244946864,0.5763187905658771,0.5739033320810172,0.571850973218569,0.5701727251036203,0.566329194743097,0.566329194743097,0.5649669083908402,0.5645038207610116,0.5621117507299573,0.5601329026414713,0.557110328465171,0.5555687520764396,0.5539655932774852,0.5528631610754599],"lo":[1.0,0.9973525417044559,0.995892839373472,0.9942786909369447,0.9926803981998976,0.9910290314030707,0.9898509284631404,0.9876725808136255,0.9854960529661674,0.9836083118703535,0.9820662477611786,0.9796897915034709,0.9764738383817616,0.9740285091878541,0.9712727835841397,0.9695789537160441,0.9673777491754967,0.9647322137721717,0.961704561407214,0.9588442937026745,0.9562779013683792,0.9531226349197855,0.9497489077048226,0.9465391236198935,0.9425321900217764,0.9384370420908213,0.9346404559667201,0.9321354194114136,0.9286093513428352,0.9261222029592854,0.9233359767403698,0.9198335143834918,0.9171259749830307,0.9143193753046043,0.9114894811991919,0.9074077990288474,0.9036516039879373,0.8993559744768624,0.8961197330570201,0.8937370636477198,0.8908727780966582,0.8875209780041114,0.8842065063005325,0.8809256685900869,0.878472777901349,0.8750351740696145,0.8715406486532852,0.8676646117521533,0.8625680092900658,0.8600378161638396,0.8554281611114378,0.851268345589988,0.8477546731309367,0.843555755797897,0.8411010911887015,0.8374153027517908,0.8335617664038192,0.831089070034172,0.8271065105642444,0.8239435452032798,0.8199228614771493,0.8161530010726706,0.8127421813765259,0.8103294302691993,0.8060621523825637,0.8023736414737004,0.7996187613666602,0.7969389170125635,0.7943351110510627,0.7908916025553672,0.7873993052934483,0.7826764946081463,0.7793152447596318,0.7765173458921119,0.7721965686267784,0.7688152930819644,0.7647508959245523,0.7610246469771628,0.7572471735311836,0.7551291201267432,0.751379413250873,0.7486619005136333,0.7454903016838125,0.7419940859087973,0.7376013483163981,0.7337325521947999,0.7306946129364696,0.726744366527724,0.723037614408566,0.7198650393146628,0.7174103824035057,0.7153823038250167,0.7117467229274237,0.7077331941179343,0.7051299771493326,0.7003364328911875,0.6966573022525759,0.6929451915197936,0.6890203737915892,0.6857355484334289,0.6831066058399399,0.6804474004267506,0.677392768460129,0.6746552715431208,0.6704101672489897,0.6678042202057545,0.6645687769413053,0.6614875251453722,0.6577759429810041,0.6540309983729887,0.6510212811707363,0.6487746742298616,0.6471154733435951,0.6441606015466518,0.6422361664934081,0.6393930708019547,0.6373922086550058,0.635142328209943,0.6316698090955768,0.6281363137010418,0.6250215117278487,0.6221115242690377,0.6191734254035561,0.6142070520433537,0.6111655692090786,0.6090723355149688,0.6058595847719106,0.6039466124376663,0.6011588748087819,0.5977354775243702,0.5951130119164615,0.5927131278495404,0.5908616470907528,0.5883513039666667,0.5848046642445349,0.5821836747894402,0.5798280829678325,0.5774198469771324,0.5742160534353324,0.5720118946336659,0.5705134880012708,0.5689714941870008,0.5662022096893776,0.5637580474580558,0.5612454228154171,0.5591094415600572,0.5573614710935709,0.5533573408006061,0.5533573408006061,0.5519337366044309,0.551449335476302,0.5489429766651153,0.5468665075088309,0.5436938852376813,0.5420749569738873,0.5403876677417532,0.5392253740223638],"hi":[1.0,0.9986216139596901,0.9975219185993827,0.9962381435227793,0.9949239369862344,0.9935357719849878,0.9925312283004524,0.9906495885577146,0.9887444770247579,0.9870766368578657,0.9857057078475957,0.9835792651302493,0.9806793805586089,0.9784598246915927,0.9759464506569104,0.9743967839670513,0.9723784178707024,0.9699451173085106,0.9671507134524824,0.9645027443987403,0.9621209978721811,0.9591861366078946,0.9560406410034453,0.9530414884315994,0.9492887929574536,0.9454440007492885,0.9418720816273403,0.9395118964444032,0.9361859906123479,0.9338377400746932,0.9312053063342748,0.9278931287660594,0.9253305720572177,0.9226725869050697,0.9199904943861246,0.9161190270897243,0.9125523339449684,0.9084688310730531,0.9053898439526747,0.9031222274809825,0.9003956070289211,0.8972033445221342,0.8940451462263144,0.8909179079416725,0.8885793532224782,0.8853007682577836,0.8819673183108508,0.878268739346326,0.8734023631336462,0.8709849904342503,0.8665792813313911,0.8626018945052294,0.8592412412276679,0.8552247031825011,0.8528768211799367,0.8493510889302059,0.8456652512881504,0.8432997201782064,0.8394910459904799,0.8364662879487419,0.8326212944822338,0.8290152341197686,0.8257522203109324,0.8234442482989177,0.8193627009413454,0.8158345171219902,0.8131995875397788,0.8106366080920754,0.8081466698579861,0.8048538583819352,0.8015141792220867,0.7969967881144784,0.7937815989729811,0.7911053106150895,0.7869722518786083,0.7837375166896917,0.7798489346369382,0.7762828863025777,0.7726674445373795,0.770640763139442,0.7670527398922701,0.7644526398732848,0.7614186208103079,0.7580742027283185,0.7538714901827168,0.7501688187919919,0.7472605844384195,0.7434784304620939,0.7399290748856239,0.7368922845520292,0.7345433736766027,0.7326036910530208,0.7291270571255766,0.725289179810077,0.722799993083355,0.7182169014070958,0.7146982117789749,0.7111467606630286,0.7073910146997888,0.7042475936426162,0.7017322721575029,0.699188267786767,0.6962665333924939,0.6936489957546177,0.6895894150425022,0.6870966149640078,0.6840041352445672,0.6810590429306054,0.6775118877661794,0.6739315998558427,0.6710553334162618,0.6689095977512839,0.6673258410424234,0.6645071908879508,0.6626720042087876,0.659963552521285,0.6580585034133355,0.6559169971558015,0.6526163071686156,0.6492586744183968,0.6462998628759861,0.6435356791670972,0.6407443988455672,0.6360257596850017,0.6331372054581943,0.6311528706481961,0.6281105191613457,0.6263006375670144,0.6236655671249044,0.6204326919856064,0.6179581750716014,0.6156975988502172,0.6139567707393152,0.6115981656999757,0.6082705047099525,0.6058120447866746,0.6036060597616557,0.6013534749328528,0.598363495000894,0.5963106306366575,0.5949167515775029,0.5934857294440364,0.590920294645605,0.5886604462194528,0.5863415604428551,0.5843723170096907,0.5827633543966441,0.579079474748558,0.579079474748558,0.577778049479981,0.5773361078240664,0.5750573500561449,0.573175251358291,0.5703014338149036,0.5688365571285537,0.5673167532441061,0.5662735981773741],"n":[18884,18762,18641,18512,18374,18233,18120,17971,17829,17669,17521,17381,17247,17103,16916,16646,16483,16334,16177,16004,15835,15611,15419,15235,15053,14899,14706,14546,14341,14149,13964,13751,13563,13401,13204,13005,12846,12667,12477,12299,12106,11926,11734,11544,11378,11190,10975,10756,10577,10427,10249,10042,9840,9643,9471,9262,9072,8908,8703,8513,8340,8178,8052,7884,7712,7566,7429,7305,7192,7044,6926,6782,6650,6538,6417,6299,6179,6077,5943,5857,5747,5646,5547,5452,5346,5257,5182,5096,5000,4896,4797,4718,4628,4533,4449,4362,4304,4226,4148,4078,4010,3942,3868,3810,3749,3674,3598,3535,3484,3413,3346,3279,3215,3153,3090,3017,2968,2900,2817,2754,2705,2661,2620,2554,2484,2418,2350,2292,2238,2176,2108,2038,1990,1946,1899,1844,1797,1737,1669,1621,1597,1556,1494,1448,1407,1374,1349,1302,1267,1231,1190,1155,1126,1097,1057,1023,991]},"sens":{"S":[1.0,0.9982488755260168,0.9969686199715426,0.9955729175079354,0.9941701014272932,0.9926499439832637,0.9915583539991882,0.989582601823745,0.9875961584974203,0.9858177253818418,0.9843607301906377,0.9821084819233659,0.9790494291248827,0.976829842702425,0.9742515164876688,0.972744383477062,0.970633240336427,0.9680921819765091,0.9654169246627764,0.9630191136678528,0.9607231097323923,0.9579171699378708,0.9547746078928177,0.9518508400984763,0.9480257392288521,0.9442367330666055,0.9408614386567522,0.9384863340880333,0.9353102624254462,0.9329508298580506,0.9303657876999124,0.92741578009882,0.9253124906207187,0.9227742798748658,0.9203500718550895,0.9167033673677326,0.9131634377869101,0.9094491634568568,0.9066321421138982,0.9045833129586193,0.9020643215916122,0.8990679464808198,0.8965660635723706,0.8937199747789544,0.8918487332649728,0.8887740411002463,0.8858868592330347,0.8827921541216364,0.8777552669762141,0.8756704945428554,0.8721217818321966,0.8682583227340568,0.8652959765469056,0.8617495263002543,0.8596755327516679,0.8564720068654421,0.8532988794624873,0.8508407034974371,0.8476530557246591,0.8448999397446194,0.841596645667247,0.8381450539157769,0.8350534973071073,0.8329601506913806,0.8297675805260243,0.8264071485480872,0.8242038519759536,0.8217485555777192,0.8192574089229525,0.8161585727567284,0.8130132396809155,0.8088726990970053,0.806589246572695,0.8041475047702361,0.8004290970771565,0.7979140937712553,0.794845981337406,0.7919969155958938,0.7889760041071306,0.7872395358870428,0.7838586195268806,0.781658999473297,0.7794280574768593,0.7764545321835375,0.7730082808702989,0.7696635763811396,0.7673143469901879,0.7646357451841442,0.7619143472627534,0.7591406715065181,0.7569517656455705,0.7553602487642617,0.75229358211517,0.7491748332560979,0.7466790932287187,0.7426207498324113,0.7397072221360013,0.7367648141830206,0.7332592903548142,0.7305935944937785,0.7282484655138123,0.7264222366543711,0.7243839888731551,0.7225002556486927,0.7186886429634245,0.7165710071222713,0.7140124148805732,0.7112197019305913,0.7081812996823592,0.7045025429531644,0.7028357105444576,0.7009235179378361,0.7002773611551646,0.6982954070578611,0.6969582741520571,0.6944490310530149,0.693523067855913,0.691878087706052,0.688731006442077,0.6857810843340705,0.6835242511521082,0.6804740674452412,0.6784227834278539,0.6750378972152891,0.6726411150277264,0.6709886053728628,0.6676050667581735,0.6658803015545297,0.663823688754645,0.6614216656378751,0.6595754522711728,0.6583081302127257,0.6573260596095089,0.6553359590333804,0.6526080968869075,0.6508728101601041,0.6494457333304807,0.6476152198107075,0.6449721083814103,0.6438017319556639,0.642208371153828,0.6405705628227281,0.6393167144870663,0.6371469908068861,0.6353655675135321,0.633093411070996,0.6312354308043256,0.6279274906744327,0.6279274906744327,0.6269230227765652,0.6264091514464205,0.6242842624027839,0.622634154717166,0.6203881966780304,0.619240156425105,0.6180492636819472,0.6168193002708807],"lo":[1.0,0.9975377183231525,0.9960718296616512,0.9945131901527331,0.9929703738589944,0.9913158727702529,0.9901359722787593,0.9880134824247084,0.9858928422993932,0.9840027708455159,0.9824589998329869,0.9800801800969976,0.9768614056113888,0.9745333053902394,0.971835077716653,0.970260086216364,0.9680562082808184,0.9654076114962084,0.9626237139528919,0.960131812151312,0.9577483021668461,0.9548384198290529,0.9515830971517454,0.9485576262373315,0.9446040330187959,0.9406925966259693,0.9372116728719874,0.934763918154955,0.9314924724366018,0.9290633037570146,0.9264027534752197,0.9233677682432222,0.9212045167134849,0.9185945880027314,0.9161026796316862,0.9123554338963381,0.9087199031686151,0.9049073784260848,0.9020168725500012,0.899914825038362,0.8973306247248609,0.8942573603199537,0.8916917304668689,0.8887733460188665,0.8868546453180653,0.8837023843351849,0.880742462417695,0.8775700550747327,0.872408348316291,0.8702726215555023,0.866637492217853,0.8626805279986857,0.8596468648191976,0.8560150639550556,0.8538910395775935,0.8506101546548259,0.8473601498130819,0.8448425685649942,0.8415772039624573,0.838756768051824,0.8353724731883778,0.8318366223488756,0.8286697656596225,0.8265252622689325,0.8232543290215696,0.8198111876475055,0.8175534954075532,0.8150374660287983,0.8124845098295783,0.809308814919595,0.8060855106455387,0.8018426440361861,0.7995027316072659,0.7970002445693313,0.7931892759231048,0.7906116944040653,0.7874668870249983,0.7845466957908508,0.7814503194850151,0.7796701190332019,0.7762039961166819,0.7739486625336122,0.7716609005006034,0.7686112792146889,0.7650769271276067,0.7616470647963611,0.7592383024875189,0.7564916121202405,0.7537006608615707,0.7508554046713127,0.7486097302771513,0.7469763793896818,0.7438286920391526,0.740627197440697,0.7380651511340004,0.7338987505838881,0.7309078856642062,0.7278877247616441,0.7242897797553238,0.7215537671941791,0.719146397308254,0.7172714662030321,0.7151783620223604,0.7132433293411216,0.7093280432191071,0.7071530513562088,0.7045239017874068,0.7016539688737241,0.6985312228584583,0.6947512167643618,0.6930379600919573,0.6910715465668869,0.6904068424787686,0.688366576107078,0.6869898336100723,0.6844046039100506,0.6834503071590774,0.681754297565173,0.6785068409285385,0.6754626645151056,0.6731328759957239,0.6699839078987322,0.6678664929839985,0.6643720069509937,0.6618965304007188,0.6601877543084386,0.6566870072857072,0.6549018504571791,0.6527718412681899,0.6502826898009726,0.6483680868942353,0.6470523005946198,0.6460311688438554,0.6439612763484459,0.6411215583807591,0.6393144789957051,0.637826691761289,0.6359163555193439,0.63315484312412,0.6319303591271361,0.6302619552287629,0.6285449806996716,0.6272294685610673,0.624948833469978,0.6230745137499714,0.6206825219842758,0.6187252269349883,0.6152399874249679,0.6152399874249679,0.6141779754263168,0.6136339311796412,0.6113799955499453,0.6096265657437117,0.6072384492244821,0.6060166440110234,0.6047462273997501,0.603431457378625],"hi":[1.0,0.9987547642096444,0.9976609159718797,0.9964283357986066,0.9951655733279349,0.9937797161460591,0.9927763786024374,0.9909472544296128,0.9890949529660195,0.9874280828883615,0.9860577474159996,0.9839319517432812,0.9810325631407811,0.9789215285968546,0.9764631528207728,0.9750238371641052,0.9730052823601196,0.9705716024218182,0.9680048771776989,0.9657010662535047,0.9634924830342824,0.9607903693062697,0.9577604404412996,0.9549382708675958,0.9512415866345263,0.9475750235379954,0.9443054062622885,0.9420029925199209,0.9389223334620423,0.9366326434958052,0.9341230849436479,0.9312580026935465,0.9292146135971114,0.9267480211319065,0.9243914113234899,0.9208450759869257,0.9174006164490895,0.9137844968838568,0.9110408880805932,0.909045199128656,0.9065912909452576,0.9036716479838711,0.901233368218531,0.8984593779697596,0.896635444118783,0.8936380605579602,0.8908233352947129,0.8878060034958134,0.8828934354161471,0.8808594328230688,0.8773968071397034,0.8736264850057771,0.8707351675431746,0.8672736896555505,0.8652494811036457,0.8621229076277401,0.8590262142119205,0.8566270964250807,0.8535166518167423,0.8508303857428624,0.847607499382931,0.8442395584789455,0.8412227576498317,0.8391801829631929,0.8360653598930596,0.832786967375881,0.8306376135029475,0.8282425357972317,0.825812663192819,0.8227900200403448,0.8197219842526186,0.8156829023643377,0.8134554303450038,0.8110738995480433,0.807447239290099,0.8049942684560302,0.8020021678779332,0.7992236033613188,0.7962774971097315,0.7945843639770446,0.791287884032822,0.7891434653681942,0.7869688103974802,0.7840706574827488,0.7807116852212772,0.7774513731261721,0.775161162238207,0.7725500585744656,0.769897602184652,0.7671948551122848,0.765062195674083,0.7635121070519783,0.7605256681003524,0.7574888553877018,0.755058780805948,0.7511074631750746,0.7482705631852694,0.7454052258955426,0.7419913424174088,0.7393953830689064,0.7371119762403403,0.7353340412311766,0.7333501764434501,0.7315172822362253,0.7278084419604646,0.7257476879730077,0.7232590304377261,0.7205428654930064,0.7175880812732367,0.7140097694435431,0.7123889810031506,0.7105305347196538,0.7099027560791233,0.7079785332139079,0.7066806113603106,0.7042465411925343,0.7033486021221443,0.7017540749886345,0.6987061592821227,0.6958493811365588,0.6936646344850854,0.6907120821102519,0.688726187456206,0.6854496897728783,0.683130719838164,0.6815337877117716,0.6782659894816473,0.6766008567029632,0.6746166881169647,0.6723006409057335,0.6705218842842735,0.6693023259391853,0.6683587101020684,0.6664471589809262,0.663829370537586,0.6621647350591104,0.6607973666632934,0.6590453193318615,0.6565185429140099,0.6554012969185162,0.6538816004326489,0.6523214664824424,0.6511281041649796,0.6490670893883306,0.6473766960964283,0.6452219666131929,0.643461300260333,0.6403271395775137,0.6403271395775137,0.6393789972608415,0.6388946456257858,0.6368959326975746,0.6353468041129344,0.6332397836856873,0.6321638293863788,0.6310505962049502,0.6299034071465437],"n":[18884,18762,18641,18512,18374,18233,18120,17971,17829,17669,17521,17381,17247,17103,16916,16646,16483,16334,16177,16004,15835,15611,15419,15235,15053,14899,14706,14546,14341,14149,13964,13751,13563,13401,13204,13005,12846,12667,12477,12299,12106,11926,11734,11544,11378,11190,10975,10756,10577,10427,10249,10042,9840,9643,9471,9262,9072,8908,8703,8513,8340,8178,8052,7884,7712,7566,7429,7305,7192,7044,6926,6782,6650,6538,6417,6299,6179,6077,5943,5857,5747,5646,5547,5452,5346,5257,5182,5096,5000,4896,4797,4718,4628,4533,4449,4362,4304,4226,4148,4078,4010,3942,3868,3810,3749,3674,3598,3535,3484,3413,3346,3279,3215,3153,3090,3017,2968,2900,2817,2754,2705,2661,2620,2554,2484,2418,2350,2292,2238,2176,2108,2038,1990,1946,1899,1844,1797,1737,1669,1621,1597,1556,1494,1448,1407,1374,1349,1302,1267,1231,1190,1155,1126,1097,1057,1023,991]}},"km_area":{"150㎡ 미만":{"S":[1.0,0.9982641884048193,0.9950233669375307,0.9937712589531938,0.9904991342661573,0.9884723980171121,0.9866900515005612,0.9848937820131757,0.9828259580028768,0.9799586133412774,0.9789056642871218,0.9746705952530912,0.9709388397393097,0.9677194043832051,0.9652856522246748,0.9622723240590714,0.958941676426297,0.9558696805422535,0.9524989761527031,0.948536264968676,0.9451116557543775,0.9399109502602704,0.9369943900494203,0.9302262565660965,0.9240102179655424,0.9159465563445888,0.9117265432126571,0.9089891071222799,0.9046843195914577,0.9012599067374752,0.8981182855335875,0.8907840577162689,0.8866059860008149,0.8833512616291518,0.8790799623204615,0.8744324464761389,0.8690718646049014,0.8640034530630826,0.8602523794652266,0.8578436644469822,0.8536562132693734,0.8490636605517093,0.845471346094646,0.8418334042179052,0.8399851271570139,0.835508153586706,0.8320682169509497,0.8277927306639693,0.8207054621229072,0.8175216795689073,0.8114631808929917,0.8061258268632174,0.8011164215826013,0.7955603946530074,0.792941812930357,0.7885016853806295,0.7848541297370829,0.7830103893584377,0.7768827696142249,0.7754372356092774,0.7710069141051907,0.7669647392960793,0.7654173644007156,0.7627995770786336,0.757449351487918,0.7546937470119333,0.7535801971155802,0.7513222713090736,0.7472782532391155,0.7425409714687136,0.7395448705479241,0.7334780763666193,0.730372613062335,0.7259710248009911,0.7208604973936018,0.7150109023747201,0.7110428121304891,0.7070261587750429,0.7043222686577663,0.7001805118174869,0.6938975038606046,0.6896293093337957,0.6860110881482498,0.6801475847455931,0.6771603728359712,0.6718893274936547,0.665800179551012,0.6603994855408031,0.6549136211244672,0.6533142727165038,0.6508592158084978,0.6500258493349914,0.6458364018441503,0.6424427889269202,0.6398510847394414,0.6337285914273619,0.6293227743552592,0.6248679976411103,0.6203081229374852,0.6175167307818737,0.6146839527646404,0.6089762731534043,0.6060671508294231,0.6041009146322088,0.5980748740959929,0.5930131638364484,0.5909504718557299,0.5888566552631073,0.5877918150185085,0.5856504542250783,0.5845537305280276,0.583448714024194,0.5812003567447173,0.5765806542927329,0.5742415654142808,0.571808010044884,0.5705622409598189,0.5680487509115378,0.5642018147387723,0.5615987971069824,0.5589527375902211,0.5535488877341519,0.5535488877341519,0.5521753172931242,0.5507594831462187,0.5478142452684315,0.5433239645695099,0.541789151110274,0.5371002946075601,0.5338983974840943,0.5322854113889762,0.527193806206721,0.5237365739206187,0.5219965853029422,0.5184151018822879,0.5166087774854855,0.5129186203150907,0.5072678804980167,0.5072678804980167,0.5052058159431467,0.5052058159431467,0.5009603889184144,0.49881953255551525,0.4921386457157907,0.4898496287589731,0.4898496287589731,0.48749458246686267,0.4850692362854355,0.4850692362854355,0.4825559241803296,0.4825559241803296,0.47713394750414617,0.47713394750414617,0.47713394750414617,0.4741703826128161,0.4741703826128161,0.4741703826128161],"lo":[1.0,0.99636241276563,0.9922967026372925,0.990795656337882,0.9869660262705312,0.9846394370971395,0.9826135693931428,0.980586270405234,0.9782676427681071,0.9750748072484505,0.9739073991730999,0.9692387544474219,0.9651549189717142,0.9616498407556648,0.9590089872542038,0.955746862207571,0.9521505635480428,0.9488432979810071,0.9452241436947868,0.9409805316310235,0.937321732502304,0.9317776882829951,0.928674963186719,0.9214916386845651,0.9149154019533754,0.9064091260721477,0.9019668851321685,0.8990877561536363,0.8945633248030866,0.8909667129324402,0.8876692567022567,0.8799785127722237,0.875603861155519,0.8721975065422676,0.8677300054861063,0.8628726826793085,0.8572753598273641,0.8519883299120086,0.8480781096855309,0.8455679627105327,0.8412044520547185,0.8364209184396003,0.8326795573125633,0.8288914205807348,0.8269663981346078,0.8223047880502492,0.8187215373489217,0.8142679342110949,0.8068904025875818,0.8035783442244302,0.79727735046992,0.7917286008798653,0.7865220724184027,0.7807466110533631,0.7780238556339714,0.7734062301296648,0.7696105019989056,0.7676918849235962,0.7613129334445998,0.7598074742082548,0.7551907571493792,0.7509761404447491,0.7493617996032431,0.7466295915379849,0.7410435969310996,0.7381640936946517,0.7370003040936898,0.734639442376308,0.7304081798505124,0.7254494186435713,0.7223141758276003,0.7159683983597792,0.7127190686618803,0.7081145457313858,0.7027696911295038,0.6966539302000255,0.692505907341714,0.6883081918828698,0.685483104065843,0.6811533857320856,0.6745895088862418,0.6701310025663095,0.6663509328519581,0.6602275504300953,0.65710750877574,0.6516050617850037,0.6452534992529527,0.6396232256786435,0.6339059719882415,0.6322382681859597,0.6296752928832214,0.6288044939241063,0.6244282276217844,0.6208837595909369,0.6181754015529304,0.6117793477971109,0.6071810424643804,0.6025335192116487,0.5977738480859945,0.594858643292131,0.5918991916474903,0.5859403607436828,0.5829024136141648,0.5808483078882758,0.5745496620535714,0.5692645267935873,0.5671098039031439,0.5649212257536802,0.5638071459992464,0.5615668757150071,0.5604177109197607,0.5592595213082427,0.5569007426049076,0.5520482747124117,0.5495915851450957,0.5470285154602755,0.5457144585856127,0.5430629326285689,0.5390019857315446,0.5362537650675263,0.5334585808695542,0.5277479234952074,0.5277479234952074,0.5262960095601541,0.5247956841207373,0.5216649134862902,0.5168918668885932,0.5152583097625808,0.5102654565220446,0.5068535725085439,0.5051354453517005,0.49968994765350516,0.49599305683904293,0.4941336413121724,0.49029892035939954,0.48836576779409174,0.48441251607017455,0.47835973701738177,0.47835973701738177,0.4761306537485258,0.4761306537485258,0.4715334446948039,0.4692175313906708,0.46197378704706643,0.45949030332216434,0.45949030332216434,0.4569292795665376,0.4542854330194337,0.4542854330194337,0.4515366997553055,0.4515366997553055,0.4455585785383312,0.4455585785383312,0.4455585785383312,0.44225668491889714,0.44225668491889714,0.44225668491889714],"hi":[1.0,0.9991721050693754,0.9967864615053662,0.9957869461291642,0.9930778841050942,0.9913531106043131,0.9898157023785764,0.988251272920598,0.9864348101074415,0.9838934051854704,0.9829548565169581,0.9791536098538359,0.9757747639214098,0.9728419547040764,0.9706159809488399,0.9678517914645889,0.9647868360286102,0.9619504159099268,0.958828766950703,0.9551478735232601,0.9519583603944392,0.9471022815158883,0.9443726840028399,0.9380220117555816,0.9321692162896075,0.924552907034763,0.9205578066357721,0.9179637454511074,0.9138810782692182,0.910630688820557,0.9076465249165712,0.9006724160540805,0.8966932435013223,0.8935918315827925,0.8895189328572521,0.8850836502962446,0.8799627670089875,0.8751159645843779,0.8715263002166305,0.8692204383384247,0.8652113134682655,0.8608121928343848,0.8573706693506785,0.8538846094963836,0.8521138125304863,0.847823255995475,0.8445276682346795,0.8404314311378284,0.833636590291436,0.830582189530207,0.8247682843726928,0.8196442447518485,0.8148337646600154,0.8094989307257346,0.806985219921845,0.8027236210664761,0.7992247791995952,0.7974561806653626,0.7915804625256361,0.7901949132311076,0.7859508703796446,0.7820807818602531,0.7806001393966225,0.7780962663867068,0.7729806149619938,0.770348064934537,0.7692844022092753,0.7671286004324986,0.7632701254290928,0.7587522008480585,0.7558940451775074,0.7501042118044907,0.7471415433108315,0.7429415504300352,0.7380640477009781,0.7324794972625063,0.7286907469714039,0.7248547489721188,0.7222719001187113,0.7183177395166747,0.7123156445303939,0.7082379826191825,0.7047818479852033,0.6991790165087807,0.6963250958435409,0.6912866853102393,0.685462052070019,0.6802932993570799,0.6750416020076533,0.6735113900855463,0.6711652491117368,0.6703696011452279,0.6663686185241369,0.6631273539173714,0.6606534046903615,0.6548075005253943,0.6505969262428325,0.6463380266354264,0.6419811792682165,0.6393155778272849,0.6366114960031735,0.6311596278283441,0.628381795137532,0.6265050958743419,0.6207568440223048,0.6159236709219906,0.6139551224340126,0.6119581795309894,0.6109436052271882,0.6089032758553773,0.6078599858094323,0.6068091388560243,0.6046731410545468,0.6002900605915155,0.598070683147672,0.5957684750763913,0.5945918471034167,0.5922181923080162,0.5885880946398399,0.586132344436224,0.5836375616821528,0.5785452560867114,0.5785452560867114,0.5772513168959248,0.5759211199584625,0.5731633675762233,0.5689592751286091,0.5675243756318786,0.5631433639669994,0.5601543073841458,0.5586480518346516,0.5539146378158354,0.5507005010476592,0.549081885497515,0.5457575647102325,0.544080267407305,0.54065784723366,0.5354172790351821,0.5354172790351821,0.5335244617679527,0.5335244617679527,0.5296355903390181,0.5276726251961321,0.521564007483405,0.51947310668175,0.51947310668175,0.5173277907704882,0.5151248186279183,0.5151248186279183,0.5128508695427366,0.5128508695427366,0.5079926377116194,0.5079926377116194,0.5079926377116194,0.5053708449268317,0.5053708449268317,0.5053708449268317],"n":[4042,4015,3983,3960,3926,3892,3862,3817,3785,3744,3706,3667,3636,3592,3544,3481,3443,3413,3377,3335,3298,3240,3200,3150,3105,3049,3010,2974,2924,2883,2836,2781,2739,2705,2658,2622,2584,2546,2510,2476,2431,2379,2340,2300,2263,2211,2166,2112,2073,2037,1996,1946,1892,1848,1801,1751,1707,1685,1635,1590,1545,1504,1475,1440,1399,1362,1337,1310,1279,1245,1227,1191,1167,1147,1118,1096,1069,1051,1030,1008,985,960,942,920,904,887,869,849,828,813,793,780,765,751,736,722,713,694,669,659,647,631,620,608,593,577,568,557,551,540,531,523,511,497,479,464,455,449,435,427,417,409,403,391,379,372,362,353,341,331,320,307,301,296,288,283,275,261,250,244,242,236,229,218,213,209,207,198,193,185,180,171,170,167,158,155,149]},"150-300㎡":{"S":[1.0,0.9982504556561819,0.9976108322376211,0.9958438256211213,0.9942303576549935,0.9932570780457505,0.9922793516505347,0.9901508014991632,0.9880127029983896,0.9866872832674648,0.9848525190964875,0.9833456009542041,0.9794665750465129,0.9765904080841004,0.9740381744267091,0.9723160253104145,0.9702245023434993,0.9672327071538114,0.9644027375360776,0.9617276795266319,0.9590311180455168,0.9572211038842896,0.9531991945860294,0.9500653399744602,0.947089133129604,0.944279726371548,0.9410724244901647,0.9382264554060774,0.9340141564262405,0.9326623454073392,0.9291376293559461,0.926370122121632,0.9231556147028153,0.918891684052395,0.9164369050302992,0.9124947014368645,0.9093622659767013,0.9049367730573923,0.9006784293998896,0.8983053611014363,0.8952441098491402,0.8919267775202256,0.8876781751957351,0.8842763778499633,0.8806051905854497,0.8778209952413447,0.8740611299992281,0.8690383633271107,0.8646685070302281,0.8622067278893296,0.85722760364035,0.8534338537193799,0.8500988567086543,0.8451462108658995,0.8422248079627243,0.8389827860049567,0.8376037208793077,0.8350821229640064,0.8316218305528733,0.8286788303763891,0.8241934081059124,0.8193377090934088,0.815335905898833,0.8125307661978767,0.8090367306353791,0.8054854672337337,0.8005624810093029,0.7972217190326922,0.7945069595896962,0.7910733685527143,0.7858380540837219,0.7815930934027528,0.7780049220366188,0.7747384729648408,0.7710662680402163,0.7669694284860606,0.7609161675004356,0.7567169273615704,0.7539959525383575,0.7524137621292912,0.7492142724926706,0.7467867556463167,0.7430964608211731,0.7401878947315964,0.7338554544313955,0.7312887033316224,0.7282663316652715,0.7247731476486787,0.7198975113801706,0.7162666833543881,0.71534216398032,0.7139299913617637,0.708683243133196,0.7048072350659133,0.7013520669939614,0.6993373900995715,0.696778688773507,0.6931522311984684,0.6873980459206916,0.6826435310448358,0.6788951879756692,0.6756459785378995,0.6718014826845914,0.6701196107890237,0.6661576983335782,0.6638738687266039,0.6609445685536995,0.656770423033709,0.6512988848673116,0.6457636580842655,0.6413771858513808,0.6388179273801918,0.6381687221694397,0.6341994131522924,0.6335297200021844,0.6321464673384242,0.62934150156087,0.6264928183494249,0.6257469935656756,0.6219742796936145,0.6181244208962938,0.6157760609953894,0.6102120455554464,0.6021825709228037,0.5989307096677462,0.5989307096677462,0.5954933902866848,0.5928713120733604,0.5919770868666132,0.5883185036179696,0.5855079698867713,0.5845481207558094,0.5825564631084875,0.5785387600459151,0.5744497772428222,0.5702848963941488,0.5702848963941488,0.5680997360951044,0.5657973239816512,0.5657973239816512,0.5645883553406648,0.5633224621672552,0.5581270417415098,0.5567886075886526,0.5553790161770357,0.5539513066238814,0.5539513066238814,0.5479738008968246,0.5479738008968246,0.5447739333659599,0.5447739333659599,0.5447739333659599,0.5396611730684,0.534432250365719,0.534432250365719,0.5325636061336709,0.5306547760041596],"lo":[1.0,0.996843062947303,0.9960400918337479,0.9939017181298319,0.9920102178147968,0.9908866438120114,0.9897677477529137,0.9873589400439572,0.9849680907681507,0.9834964299940849,0.9814699081135716,0.9798139856511,0.975579224550596,0.9724617831183427,0.9697075482766144,0.9678534341004629,0.9656055920439748,0.9623984953131093,0.959374185279654,0.9565220065472266,0.9536526847543942,0.9517296601813082,0.9474639616767975,0.9441473209236358,0.9410023544180695,0.9380379069788124,0.9346582163666679,0.9316633907771562,0.9272366071319047,0.9258172253477828,0.9221176386665685,0.919215485591181,0.9158459388485415,0.9113808366099604,0.9088126980214786,0.9046903633412829,0.9014180104706789,0.8967988294054496,0.8923582677448144,0.889884633352501,0.8866941746426881,0.8832382536237501,0.8788147481183191,0.8752743609888269,0.8714552354804435,0.8685598485422983,0.8646508371251734,0.8594303870136751,0.8548907996685458,0.8523338764273232,0.8471643194681298,0.8432266802208372,0.8397657669302088,0.8346272046955104,0.8315961595258722,0.8282320410027508,0.8268003268504307,0.8241816007660581,0.8205853131844217,0.8175258547071292,0.8128634121901465,0.8078180549770704,0.803661371341334,0.8007481616735683,0.7971186397750295,0.7934296277282623,0.7883164310153521,0.784846727514858,0.7820268509787535,0.7784606690363987,0.7730239863773183,0.7686174584027444,0.7648932302346397,0.7615035036566858,0.7576933060073753,0.7534430101597355,0.7471648422211622,0.7428124205908976,0.7399915374545167,0.7383504575188592,0.7350316349166376,0.7325135517018988,0.7286853541362,0.7256680966165551,0.7190999810391253,0.7164383663875665,0.7133046091518638,0.7096830008963909,0.704628485838385,0.7008628944964737,0.6999035276115924,0.6984369485018963,0.6929880718443198,0.6889633126414194,0.6853746291168469,0.6832808990174617,0.6806206777454525,0.6768503405045876,0.670871166740057,0.6659340230269704,0.6620423878856156,0.6586694238959194,0.6546783555171091,0.6529312563608266,0.6488160435877454,0.6464443312491462,0.6433992051477971,0.6390589040433855,0.6333693269002457,0.6276171865954088,0.6230588671130176,0.6203979864373437,0.6197226177875623,0.6155905463888677,0.6148932363956507,0.6134500713776863,0.6105224760675135,0.6075483688226233,0.6067674539767325,0.6028165710901668,0.5987836217633864,0.596322911094195,0.5904933124956395,0.58209235343452,0.5786928282549193,0.5786928282549193,0.5750875332761145,0.5723363811862304,0.5713969433836918,0.5675492674830049,0.5645909704557711,0.5635792578056837,0.5614743733751901,0.5572301853659379,0.5529109476130524,0.5485116126284852,0.5485116126284852,0.5461961848308617,0.5437466876151238,0.5437466876151238,0.5424552512808589,0.5410973836700697,0.5355191902945546,0.5340801202945916,0.5325569685743856,0.5310133565668669,0.5310133565668669,0.5245316990888954,0.5245316990888954,0.5210441032044987,0.5210441032044987,0.5210441032044987,0.5154442876189667,0.509723260253882,0.509723260253882,0.5076654847002858,0.505560663274341],"hi":[1.0,0.9990307241897871,0.9985589720448309,0.9971683149815945,0.9958348769884219,0.9950125010068757,0.9941762723661068,0.9923284581813934,0.9904436426923516,0.9892645762042471,0.987621542432151,0.9862636833837601,0.9827406112238868,0.980106398739477,0.9777568084409771,0.9761667654067766,0.9742314271732372,0.9714546580817411,0.9688190198797015,0.9663210865538706,0.9637973017667745,0.9621003123009728,0.9583221666572113,0.9553712016898303,0.9525638620338551,0.9499096639446084,0.9468750047108909,0.944178221444634,0.9401809339630977,0.9388968520025213,0.9355471706497662,0.9329144421735874,0.9298549122168039,0.9257921337872635,0.9234507772964864,0.9196886682951384,0.9166962551185578,0.9124647003945445,0.9083889222922342,0.906116560017526,0.9031845831958235,0.9000058884993976,0.895932293540268,0.8926691318827269,0.8891459335833481,0.8864729612812721,0.8828622401460212,0.8780370658699055,0.8738368988630302,0.8714702074470198,0.8666814577260662,0.8630315423812867,0.8598223805669133,0.8550554974087943,0.8522435692570464,0.8491233495448554,0.8477967119804051,0.8453717194797775,0.842046368317143,0.8392188135485158,0.8349088721954163,0.8302413179894303,0.8263932580634199,0.8236954241015317,0.8203358164689176,0.8169212069316791,0.8121869702202104,0.8089741638530512,0.8063636850490277,0.8030616617365082,0.7980262364525449,0.7939418139199731,0.7904888850127971,0.7873450339480762,0.7838101237071557,0.7798660225459901,0.7740368094608107,0.7699904360955159,0.7673691205755087,0.7658456104588202,0.7627650237677902,0.7604277588787484,0.7568748946852863,0.7540746708339515,0.7479773027718181,0.7455052573781673,0.7425941354604544,0.7392292775238354,0.7345324753307486,0.731036301378825,0.7301465662065528,0.7287886151496856,0.723743382755886,0.7200157950848923,0.7166938329895037,0.7147579614644014,0.7123004082227089,0.7088173628570748,0.703287821412185,0.6987160313471854,0.6951111932060665,0.691986019089055,0.6882884940263618,0.6866719701080276,0.6828637361618125,0.6806680864002429,0.6778548204285437,0.6738471496397591,0.6685942381188373,0.6632769928191574,0.6590633767531708,0.6566063043519635,0.6559833878539896,0.6521774953965628,0.6515355322229274,0.6502122475683519,0.6475300042608274,0.6448068592781575,0.6440960205273328,0.6405009991134022,0.6368338256941176,0.6345976099367595,0.6292989856770346,0.6216421063242707,0.6185387498725468,0.6185387498725468,0.6152697118437501,0.6127769906602475,0.6119280242890667,0.6084585966399526,0.6057958613146779,0.6048878327209003,0.6030090295007211,0.5992173772488286,0.595358506727547,0.5914282414537547,0.5914282414537547,0.5893731465933939,0.5872171523645755,0.5872171523645755,0.5860900507892702,0.5849152224886014,0.5800989454191263,0.578860206519041,0.5775628161145697,0.5762496378945345,0.5762496378945345,0.570770126476206,0.570770126476206,0.5678541547448639,0.5678541547448639,0.5678541547448639,0.5632215360954992,0.558478885391155,0.558478885391155,0.5567968216130953,0.5550813661992885],"n":[6298,6261,6228,6187,6146,6109,6073,6031,5985,5934,5890,5848,5797,5756,5699,5599,5536,5480,5428,5369,5314,5253,5192,5126,5075,5031,4972,4919,4853,4786,4720,4646,4571,4513,4449,4381,4336,4276,4202,4138,4069,4012,3940,3882,3817,3765,3690,3602,3539,3485,3421,3355,3282,3212,3150,3071,3004,2940,2854,2797,2737,2673,2632,2576,2521,2473,2419,2372,2330,2283,2235,2200,2157,2122,2083,2045,2002,1966,1919,1889,1859,1835,1803,1771,1726,1695,1674,1647,1606,1567,1537,1509,1475,1441,1401,1377,1356,1330,1307,1281,1257,1238,1206,1189,1169,1141,1112,1089,1066,1041,1015,989,969,951,935,909,893,868,839,812,798,779,764,745,727,712,689,670,660,640,612,596,581,573,556,539,526,508,488,468,457,442,418,405,394,385,377,360,350,340,329,324,314,304,293,282,274]},"300-600㎡":{"S":[1.0,0.9993948352213468,0.9991920770888205,0.9977673585260358,0.9973588550662696,0.9969482076544529,0.996124155630467,0.9952987794487713,0.9944704413432072,0.9932225413489183,0.9921744381737575,0.9909120839817023,0.9894342347801695,0.989009948502455,0.9875158654923122,0.9866547535325774,0.985783437027427,0.9838122542963204,0.9809518790835486,0.9787358250784427,0.9773954335334833,0.9753659508856933,0.9733184421854394,0.9724001597068193,0.9696305813344434,0.9670768561639014,0.9631026249875015,0.961455074904073,0.9590740724884442,0.9576288240487738,0.9559250975347663,0.9546949348176229,0.9534501385264775,0.9519436195851055,0.9491616689313467,0.9458317547868,0.9429840425864102,0.9401143505901022,0.9385338743261811,0.9361307556498575,0.9345091928617639,0.9320491368357741,0.9295643481180557,0.9262086923575507,0.9245067780036864,0.9219268751767546,0.9190139321055133,0.9163556906839718,0.9130557905038472,0.910944411240707,0.907898040939076,0.9057336958659444,0.9035321903006,0.9009748997275543,0.8987040253340635,0.8944412927781322,0.8901086976169993,0.8867349324487639,0.883307609457994,0.8791389248279837,0.8756047675033067,0.87239711762247,0.8680519014251119,0.8673126572008086,0.8639597160626493,0.8601678127059931,0.8578489353011048,0.8547264015167251,0.8523601435362986,0.8495544863603477,0.8471165203371209,0.842578360998486,0.8388256931598529,0.8367148721277169,0.8324098229561032,0.8302240347475522,0.8275729470897836,0.8244533497001938,0.819499897353439,0.8176777696706824,0.813523079730622,0.8121228476256604,0.8097489797601972,0.8073421472217358,0.8049158817905836,0.8004952976984491,0.7980144423002453,0.7955052162578587,0.7929697981164016,0.7909084327768837,0.7877719026093423,0.7845849494076116,0.7824346002996215,0.776442059275902,0.7753434413992645,0.7703310460565933,0.7669461831037402,0.7623923457145882,0.7595240407372278,0.7560328524492004,0.7548464505673442,0.7530534398655462,0.7506373529737578,0.7475790143488463,0.7426398734465743,0.7407692334923096,0.7382203345575555,0.7369359061498097,0.7336814148819127,0.7304089628196687,0.7264005369793232,0.724354950518991,0.7222761050172144,0.7215700677689082,0.7187214988684116,0.7151177021005851,0.712926284314293,0.7114417690236639,0.7054084280325267,0.702359642428564,0.6984816527037818,0.696128083179019,0.6937594026754754,0.6913448440644118,0.6897016987357797,0.6862999124360031,0.6845546114090072,0.6818687433829735,0.6763941821163864,0.6726763024246035,0.6688634316055933,0.6668932803907675,0.6648692970576011,0.6627931986517538,0.6595406207691968,0.6584265318827625,0.6539126668040809,0.6527428767024636,0.648025172721938,0.6419321395876741,0.6406904913486264,0.6406904913486264,0.6380484011715516,0.6353673832444039,0.6339678956161122,0.6297034228473207,0.6282491424250406,0.6253270217092488,0.6253270217092488,0.6253270217092488,0.6253270217092488,0.6220006726001949,0.6220006726001949,0.6184865445064084,0.6167143767571064,0.6148789173024721,0.6129693554474955],"lo":[1.0,0.9981248357340528,0.9978488035964475,0.9959721088751792,0.9954557566024579,0.9949428985848282,0.9939302137904845,0.992933739990553,0.9919469290739475,0.9904796596988165,0.9892607503547673,0.9878066540736367,0.9861201861527334,0.9856384986227473,0.9839495624133461,0.9829805897003999,0.9820023065830645,0.9798002364594993,0.9766293537150628,0.9741883232921791,0.9727169355766838,0.9704951095852079,0.9682606323718449,0.9672603164526165,0.964251168608213,0.9614863660176793,0.9571998274657172,0.9554277942935936,0.9528700653645193,0.9513191671001491,0.9494922310791816,0.9481738305482288,0.9468400355346266,0.9452267749920765,0.9422517460103982,0.9386963732934305,0.9356608124825837,0.9326065336744622,0.9309258248692969,0.9283712043213229,0.9266481922172985,0.9240355265423273,0.9213987824544405,0.9178409335918858,0.916037309283998,0.9133045188274136,0.9102201724433454,0.9074070244214967,0.9039165141820353,0.9016854118825188,0.8984681817193767,0.896182988190636,0.8938582691350684,0.8911578806697628,0.8887602236682042,0.8842629075550335,0.8796954981288538,0.87614176965342,0.8725328920344505,0.868146121477973,0.8644284574186868,0.8610567139187197,0.8564908687535373,0.8557137705391994,0.8521899574932869,0.8482053629770251,0.8457682841858415,0.8424876369464415,0.840002272556855,0.8370549185311011,0.8344938638487525,0.8297275372001214,0.825788972382062,0.8235739407230908,0.8190553432824215,0.8167612598740769,0.8139790707717032,0.8107064100693119,0.805513025458194,0.8036032191916652,0.799248831316055,0.7977814881513922,0.7952924873962356,0.7927684890087108,0.7902246541939755,0.7855910018486777,0.782991542908881,0.7803623429306431,0.7777058727713025,0.7755452391786469,0.77225708375695,0.7689156603172643,0.7666610647744319,0.7603800636987578,0.7592291308815012,0.7539778557577157,0.7504329428485108,0.7456663457219826,0.7426656299921058,0.7390130270383605,0.7377709484491146,0.7358936237771299,0.7333636071545813,0.7301607911358087,0.7249909329897316,0.723033459128945,0.7203638595678798,0.7190186148804539,0.7156090282140338,0.7121825514483038,0.7079837268391937,0.7058397109700163,0.7036596079367585,0.702918466151461,0.6999279928698173,0.696145050992005,0.6938444508023169,0.6922849760299923,0.6859468469088763,0.6827460392861391,0.6786736461739254,0.6762023355792165,0.6737157728309228,0.6711791642994872,0.6694512869881986,0.6658671471804675,0.6640260157460345,0.6611888421314319,0.6554052448581343,0.6514778908688048,0.6474470180178962,0.6453604931556443,0.6432134540710392,0.641007854188231,0.6375422274141234,0.6363532098500201,0.6315359316022687,0.630284712762525,0.6252414732692771,0.6187233753299299,0.6173949072695716,0.6173949072695716,0.6145524639005087,0.6116676717168861,0.6101563645981837,0.6055505272236429,0.603978351972407,0.6008216393122943,0.6008216393122943,0.6008216393122943,0.6008216393122943,0.5971793912204042,0.5971793912204042,0.5933139870784221,0.5913663373183384,0.5893425266663319,0.5872288312249433],"hi":[1.0,0.9998047815073604,0.9996966965403007,0.9987629538454846,0.9984655627727111,0.9981590802943522,0.9975260774164854,0.9968734987251395,0.9962046976550789,0.9951771018930077,0.9942998848015033,0.9932293264650346,0.9919602226503247,0.991593306195516,0.9902936692351891,0.9895399582823702,0.9887747338049959,0.9870326942431923,0.9844812894454558,0.9824893583536431,0.9812793950637947,0.9794412172816135,0.9775796179175301,0.976742814379196,0.9742113625489134,0.9718677576994826,0.9682049023329938,0.9666815777578603,0.9644766892149597,0.9631365782635014,0.9615553069935661,0.9604127166499886,0.9592560832057921,0.957855228314064,0.9552645076826305,0.9521579036215089,0.9494963580439223,0.9468097809809249,0.9453287190395775,0.9430756656185023,0.9415545014950302,0.9392453803946996,0.9369108974301775,0.9337552227317698,0.9321538273934353,0.9297249788517041,0.926981234365447,0.924475855484693,0.9213639584871963,0.9193708235308862,0.9164932435404708,0.9144481951135263,0.9123681405846471,0.9099517480564471,0.907805619315773,0.9037738894815448,0.8996726631409885,0.8964763848586058,0.8932280932077015,0.8892745889094076,0.8859214822140287,0.8828759129222816,0.8787486322230268,0.8780467158080998,0.8748623054393845,0.8712603915379157,0.869057950136698,0.8660912314924272,0.8638423877366883,0.8611763067703561,0.858859552563127,0.8545461081009643,0.8509767720160183,0.848968735859683,0.8448741396332021,0.842795066945783,0.8402731769980805,0.8373045312079478,0.8325879978705685,0.8308524981319039,0.8268951131195212,0.8255612025204169,0.8233009582313923,0.8210097044569035,0.8186994712068685,0.8144892870756484,0.8121256523214749,0.8097350007130495,0.8073192433128594,0.8053559196969065,0.8023690907446687,0.799334621031888,0.7972871857605401,0.7915796718726995,0.7905328115121333,0.7857567657455076,0.7825304184179408,0.7781876024632662,0.775450813748697,0.7721199545744207,0.7709887810265784,0.7692793978106124,0.766976300519305,0.7640612537593235,0.7593512663891131,0.7575669504475672,0.7551378368257882,0.7539137757232499,0.7508131768900779,0.7476937890130727,0.7438744872664114,0.741926588263842,0.7399481504033077,0.7392768646958027,0.7365687838988869,0.7331424592633501,0.7310592280131276,0.7296489212232352,0.7239174797758805,0.7210195567039887,0.7173345057735165,0.7150978721251591,0.7128463679695634,0.7105530139931513,0.7089939003930356,0.7057724628548538,0.7041218023259255,0.7015851255241096,0.6964154948902925,0.6929045420004258,0.6893069545299517,0.6874515149239259,0.6855486260481216,0.6835997902627892,0.6805559956812901,0.6795152430200724,0.6752985670797276,0.6742084073992083,0.6698094814542362,0.6641329916249595,0.6629764953958456,0.6629764953958456,0.6605299898948577,0.6580480178176321,0.6567574847306934,0.6528258668805307,0.65148655135806,0.6487934770680094,0.6487934770680094,0.6487934770680094,0.6487934770680094,0.6457729241397254,0.6457729241397254,0.6425982809653961,0.6409959207280352,0.6393424889264203,0.6376299178738575],"n":[4964,4945,4925,4898,4868,4848,4832,4813,4787,4757,4728,4702,4679,4655,4608,4542,4517,4484,4448,4403,4355,4304,4261,4227,4185,4155,4102,4060,4009,3962,3915,3861,3817,3779,3730,3669,3630,3584,3539,3492,3439,3393,3346,3287,3245,3192,3137,3081,3036,3000,2959,2898,2849,2796,2759,2703,2659,2604,2566,2507,2463,2427,2383,2341,2290,2248,2214,2174,2148,2099,2066,2030,1995,1960,1926,1887,1863,1844,1804,1785,1751,1723,1692,1672,1647,1621,1597,1576,1557,1525,1494,1469,1447,1420,1401,1374,1356,1331,1312,1291,1269,1251,1230,1217,1196,1175,1155,1139,1124,1099,1080,1060,1037,1020,1005,987,970,951,928,913,894,882,869,850,827,798,775,751,735,713,691,665,644,620,606,587,572,558,535,517,511,499,479,466,449,438,432,419,410,400,383,369,360,351,338,327,318]},"600㎡ 이상":{"S":[1.0,0.9963890818054325,0.9958709387571718,0.9958709387571718,0.9958709387571718,0.9953448579654354,0.9953448579654354,0.9942862617738079,0.9937505471931107,0.9932125122460652,0.9904999487510773,0.9894054736695843,0.9894054736695843,0.9883012258010314,0.9849632764187126,0.9844036381934747,0.9838411218287927,0.9838411218287927,0.9821310793712795,0.9809823872642455,0.9792512311000546,0.9786690365512436,0.9780801863487458,0.9768910311069844,0.9756838636472652,0.9720387099469713,0.9702007848534724,0.9683369954680195,0.9658396474299127,0.964576694487959,0.9613966068184115,0.9594716603144737,0.9581807443511905,0.9581807443511905,0.9568672609383971,0.953534142436995,0.9508404974858758,0.9494816438013536,0.9481050819801646,0.9467128481774112,0.9452982479874495,0.9431654413409278,0.9431654413409278,0.9416957320684806,0.9409507196222239,0.9379456447559678,0.9348854509412603,0.9333433553125905,0.930224400324547,0.9286543990986583,0.9254630386579582,0.920617575211702,0.9189924627864914,0.9181652868523901,0.9164859711445226,0.9164859711445226,0.9122152377369332,0.9113570860551488,0.9104924208881134,0.9069564480181629,0.9060593595433675,0.9042562456183247,0.9033456149580847,0.9005764780587044,0.8949721450796125,0.892148876614644,0.892148876614644,0.8911916353307228,0.8902208383423451,0.889246854930592,0.886302328920888,0.8833325289044598,0.8802795362930388,0.8802795362930388,0.8771726328177732,0.8771726328177732,0.8771726328177732,0.8728407977078232,0.8673826848773425,0.8662791445657937,0.8662791445657937,0.8640022929033174,0.8616936045527354,0.8593408410436079,0.8557864948555108,0.8521940824353926,0.8521940824353926,0.8485487490106615,0.8460820062175997,0.8385778639767485,0.8360633876229951,0.8335298272554748,0.830966995892382,0.8283597273678552,0.8257174315867776,0.8217241484137433,0.8190475225231447,0.8176981855832384,0.8176981855832384,0.81632620876179,0.8121870636669164,0.8121870636669164,0.8107867411433528,0.8050968511764556,0.8050968511764556,0.8021955823904241,0.800712780944231,0.7962394010823538,0.791721004170507,0.791721004170507,0.7901866611391688,0.7901866611391688,0.7870416302422247,0.7838259240162853,0.7822131134730418,0.7772658274944325,0.7772658274944325,0.7772658274944325,0.775550008890692,0.7702661099006003,0.7702661099006003,0.7667082987694198,0.7649085140305244,0.7558151883773448,0.7539443587031435,0.7520307943409528,0.7481840390580063,0.7481840390580063,0.7481840390580063,0.7461619200335252,0.744106377554094,0.7399551321872474,0.7399551321872474,0.7377978285948648,0.7334514212683878,0.731262014040721,0.7289910139971163,0.7289910139971163,0.7265930172405468,0.7265930172405468,0.7217083167686662,0.7217083167686662,0.7217083167686662,0.7217083167686662,0.7190934315629827,0.7190934315629827,0.7164102471168522,0.7136548230894797,0.7136548230894797,0.7136548230894797,0.7106308619746937,0.707567797914458,0.707567797914458,0.707567797914458,0.7042767849009024,0.7008412883891907,0.7008412883891907],"lo":[1.0,0.9924407117814101,0.9917605049878053,0.9917605049878053,0.9917605049878053,0.991072264370826,0.991072264370826,0.989705989726819,0.9890211786765769,0.9883383866055504,0.9849616258220596,0.9836238349118384,0.9836238349118384,0.9822838897596097,0.9782913272531987,0.9776290770263716,0.9769646730608911,0.9769646730608911,0.9749507903462967,0.9736051029252424,0.9715877363994342,0.9709112421404026,0.970227030126158,0.9688473438982502,0.9674488522176652,0.9632547497553301,0.9611538949843386,0.9590288122689744,0.9561940837300329,0.9547639726060966,0.9511756046067584,0.9490113205238275,0.9475628334149065,0.9475628334149065,0.9460886427949551,0.9423543632467404,0.9393466499673586,0.9378320743150416,0.936298071678024,0.9347472608749117,0.9331712272193646,0.930799142622009,0.930799142622009,0.929161241360625,0.9283306874917957,0.9249852024095389,0.921583416743657,0.9198722807536356,0.9164158977257207,0.91467916363692,0.9111507816572894,0.9058078704910466,0.904020253766298,0.9031094453834247,0.9012591750731556,0.9012591750731556,0.8965571220648408,0.8956140000224523,0.8946635869168829,0.8907742536771329,0.889787712018151,0.887805963913886,0.8868050906524351,0.88376141051654,0.8776142976373356,0.8745252352526858,0.8745252352526858,0.8734773095928027,0.8724135780420257,0.8713467503380794,0.8681234694298293,0.8648764698191006,0.8615351677083977,0.8615351677083977,0.8581356043681732,0.8581356043681732,0.8581356043681732,0.8533837299634828,0.8474122548277191,0.8462061786553388,0.8462061786553388,0.8437115571271836,0.8411820420250502,0.8386027071884493,0.8347109242832993,0.8307821893065508,0.8307821893065508,0.8267983882211668,0.8241033047451352,0.8159174887031271,0.8131814837036643,0.810426467631853,0.8076401201194429,0.8048041103335452,0.8019300365814099,0.7975910949836975,0.7946864971388217,0.7932225025137777,0.7932225025137777,0.7917322120543004,0.7872401729357301,0.7872401729357301,0.7857201920474367,0.7795450100738105,0.7795450100738105,0.7763965645007121,0.7747852338041044,0.769928954649028,0.7650300938718178,0.7650300938718178,0.7633656307738589,0.7633656307738589,0.7599482914185888,0.756451017906806,0.7546987101372973,0.7493188789748204,0.7493188789748204,0.7493188789748204,0.7474474307540953,0.7416772955555115,0.7416772955555115,0.7377973526712889,0.7358347810944896,0.7259368167418119,0.7238994599216071,0.7218118145033136,0.7176193351793277,0.7176193351793277,0.7176193351793277,0.7154048560130618,0.7131516878804612,0.7086041562654047,0.7086041562654047,0.7062331926731269,0.701461437719247,0.6990602790149464,0.6965605590500246,0.6965605590500246,0.6939046620127086,0.6939046620127086,0.6884941497671434,0.6884941497671434,0.6884941497671434,0.6884941497671434,0.6855759861732862,0.6855759861732862,0.6825758798190836,0.6794888726066408,0.6794888726066408,0.6794888726066408,0.67605764592258,0.6725843267240685,0.6725843267240685,0.6725843267240685,0.6688172614964194,0.664868014445474,0.664868014445474],"hi":[1.0,0.9982769262775495,0.9979329367098375,0.9979329367098375,0.9979329367098375,0.9975751927052839,0.9975751927052839,0.9968318216628814,0.9964462927880918,0.9960534959362766,0.994004823614365,0.9931529916988963,0.9931529916988963,0.9922827760684816,0.9895955654502718,0.9891380579865705,0.9886767208034336,0.9886767208034336,0.9872665942573065,0.9863122365877147,0.9848637902959024,0.9843745225144104,0.9838791405834546,0.982876176090898,0.9818550672038138,0.9787460412082648,0.9771657852834681,0.9755574393588904,0.9733909530936881,0.9722917406150471,0.9695122689305447,0.9678225047711992,0.9666865197769949,0.9666865197769949,0.9655302246221554,0.962588861034833,0.9602025188088874,0.9589960742787651,0.9577731861888538,0.9565354448853848,0.9552775579874726,0.9533774055386796,0.9533774055386796,0.9520697377008086,0.9514069102798717,0.9487292025759207,0.9459974297204663,0.9446181653801007,0.9418244412032947,0.940415488118628,0.9375492571282333,0.9331851735908415,0.9317178669581886,0.930971581341827,0.9294571496049923,0.9294571496049923,0.9256022289101032,0.9248262251587487,0.924044374641703,0.920848530621638,0.9200374673511389,0.9184062606343735,0.9175823990580313,0.9150769443399238,0.9099955439496508,0.9074294375286697,0.9074294375286697,0.9065597333820153,0.9056784026347144,0.9047938450122083,0.9021179982673467,0.8994158820031561,0.8966403154513957,0.8966403154513957,0.8938149030670978,0.8938149030670978,0.8938149030670978,0.8898843442043233,0.8849191294498435,0.8839142079803302,0.8839142079803302,0.8818455678853805,0.8797479440045486,0.8776113989793476,0.8743798302474192,0.8711098496613577,0.8711098496613577,0.8677893890655517,0.8655418806089133,0.8586942439594719,0.8563942410721962,0.8540753513020055,0.8517292343173759,0.8493434716542595,0.8469256015474949,0.8432677683681051,0.8408129971044103,0.8395752791456085,0.8395752791456085,0.8383181741312522,0.8345223347462294,0.8345223347462294,0.8332383700031698,0.8280205492945939,0.8280205492945939,0.8253597851593174,0.8240016853118356,0.8199006438949542,0.81575332298779,0.81575332298779,0.8143457570139054,0.8143457570139054,0.8114651739570574,0.808522489971883,0.807045244451664,0.8025177318425603,0.8025177318425603,0.8025177318425603,0.8009521437530541,0.7961368367417596,0.7961368367417596,0.792890456967957,0.7912481459974449,0.7829365091712477,0.7812274627962037,0.7794825292465664,0.7759714686815369,0.7759714686815369,0.7759714686815369,0.7741347043913176,0.7722693954526253,0.7685002759039395,0.7685002759039395,0.7665481095023866,0.7626110955459338,0.7606260018036887,0.7585746070183654,0.7585746070183654,0.7564222970914583,0.7564222970914583,0.7520390047926979,0.7520390047926979,0.7520390047926979,0.7520390047926979,0.7497110379052432,0.7497110379052432,0.7473273003829379,0.744884786801775,0.744884786801775,0.744884786801775,0.7422408285665589,0.739561189606198,0.739561189606198,0.739561189606198,0.7367121158830248,0.7337525820736327,0.7337525820736327],"n":[1941,1927,1915,1907,1896,1886,1882,1868,1854,1840,1817,1806,1797,1784,1765,1755,1744,1732,1718,1706,1692,1671,1646,1629,1607,1595,1572,1555,1532,1521,1505,1490,1476,1462,1440,1423,1405,1388,1368,1350,1333,1316,1294,1274,1261,1242,1216,1203,1186,1173,1152,1136,1125,1107,1091,1077,1064,1056,1040,1020,1007,993,989,969,953,943,932,926,916,907,900,878,860,852,841,832,819,803,790,782,767,752,740,729,718,707,702,692,681,669,662,656,644,629,624,615,612,606,601,593,587,581,574,560,558,551,540,531,525,520,511,504,497,487,478,468,465,454,444,436,433,428,422,412,401,392,385,381,372,364,359,350,348,342,337,329,321,310,301,298,295,291,282,277,271,269,262,256,245,239,232,226,220,215,211,204,196]},"면적 결측":{"S":[1.0,0.9950919781789859,0.9919965643445279,0.9894655486337565,0.9881912746361234,0.9810533632510002,0.979082458471146,0.971709742228766,0.9642717996178963,0.9601703243867968,0.9594750526095436,0.9545817465604964,0.9475279470828911,0.9418390635190521,0.9353880759169337,0.9339338735853906,0.9287498793044285,0.924255879349799,0.9204598024635111,0.9166225934740903,0.9127490701469809,0.9033735565178608,0.8946531543679471,0.8914305752410079,0.8824916703328506,0.8792132863600746,0.8734195544249157,0.870089069946651,0.8675686830118635,0.8581946564683512,0.8573277931789892,0.8520868163547958,0.8494423989099517,0.8467664992444391,0.8449493786220977,0.8394427019316996,0.8338586341882486,0.8244724539346654,0.8197176446707247,0.8168256141530342,0.8129405658656861,0.809036855720167,0.8041204059924301,0.8011396640098497,0.7981228095193474,0.7920572026076925,0.787963764074708,0.783839631580969,0.7734602348606018,0.770325965198584,0.765045349572014,0.7575732527074678,0.7511071801587036,0.7445709465503697,0.7434678784814062,0.7379079351410378,0.7265981189942712,0.7242966555165268,0.7184383589433564,0.7148797220543762,0.708886406955685,0.706471107028503,0.701598892497272,0.6966511836853719,0.69162121123999,0.685299194401751,0.6827348530605246,0.6814368780547062,0.6801339394733397,0.6748920594003274,0.6735687416367974,0.6681141356998184,0.6667222312504437,0.6638514052908217,0.6580023805954962,0.6550448869023434,0.6490105222992035,0.6474870234205669,0.6443167856741023,0.6426856039382185,0.6393813077740117,0.6343772635944315,0.6309984052883655,0.6258402257266299,0.6188570632705567,0.6153207371947249,0.6135423535612141,0.6063242082251998,0.6063242082251998,0.6044756588098791,0.5987908224874143,0.5968592391890679,0.5948828840924154,0.5948828840924154,0.5908013187209263,0.5781706847372458,0.5696677140905428,0.5675341271463835,0.5632016788519932,0.5632016788519932,0.5632016788519932,0.5632016788519932,0.5585278059984496,0.5561711485891735,0.5514377771118187,0.5514377771118187,0.539386900861383,0.5345273613142829,0.5320865971073684,0.5247302465748591,0.5247302465748591,0.5171254603926148,0.5171254603926148,0.5145398330906517,0.5119411470649413,0.5092467199751258,0.506537960826322,0.5010618747633347,0.4953679898228423,0.49240171443468156,0.4893992649564213,0.4893992649564213,0.48639681547816105,0.4833183546207043,0.47084404486075704,0.46764102414741854,0.4643244211392808,0.4643244211392808,0.4643244211392808,0.46072500702192204,0.46072500702192204,0.46072500702192204,0.46072500702192204,0.46072500702192204,0.46072500702192204,0.4564191658348013,0.4564191658348013,0.4519879117975702,0.4429481535616188,0.4429481535616188,0.4429481535616188,0.4381334997185577,0.4381334997185577,0.4381334997185577,0.4274473167985929,0.4221042253386105,0.4163219756764377,0.410458285878178,0.410458285878178,0.410458285878178,0.410458285878178,0.410458285878178,0.4040448751613315,0.3975280223361487,0.3975280223361487,0.3975280223361487,0.3975280223361487],"lo":[1.0,0.9902099087029093,0.9862562247173146,0.9831077785438501,0.9815476135872123,0.9730084813412374,0.9706977259209024,0.9621612285843786,0.9537051943905734,0.949088133405308,0.9483067068911927,0.9428274944974306,0.9349863760214968,0.9287046806567354,0.9216194284901054,0.92002545811109,0.914347775161511,0.9094397614084051,0.9053013571173993,0.9011252515240119,0.8969170698601512,0.8867676613849972,0.8773653350756002,0.8738967497847929,0.8642981523671456,0.8607856602039397,0.8545856906522535,0.8510271228222299,0.8483353417994252,0.8383362183401598,0.837412070316645,0.8318278700833025,0.829012432691957,0.8261634038027691,0.8242271478667572,0.8183626487119755,0.812421159754951,0.8024550596714417,0.7974135895873846,0.7943476268171628,0.7902311107888605,0.7860986798077448,0.7808985328616074,0.7777470587160444,0.7745571876440083,0.7681503796510365,0.7638291431223028,0.7594783917386045,0.7485470723418768,0.7452510228940638,0.739699566150966,0.7318516750943369,0.7250683881932061,0.7182177056261124,0.7170615599531233,0.7112354716131556,0.6993946814753956,0.6969860533772414,0.6908523714700506,0.6871273261725399,0.6808563718077223,0.6783304694989469,0.6732364389703348,0.6680634613033384,0.6628041242449452,0.6562010068008026,0.6535225912586691,0.6521661208586573,0.6508044938497223,0.6453287015143657,0.6439463866876268,0.6382385192585726,0.636780697098192,0.6337671172425857,0.6276248642700359,0.6245201008173485,0.6181821287918589,0.6165824163096041,0.6132430032538827,0.6115211830863352,0.6080317957584481,0.6027502182458196,0.5991846845692874,0.5937400072385766,0.5863736800348932,0.5826455311764939,0.5807713693449836,0.573165298741708,0.573165298741708,0.5712156060821318,0.5652121287952647,0.5631709773938277,0.5610787458332133,0.5610787458332133,0.5567473969157536,0.5433438830756316,0.534351291457416,0.5320989265369199,0.5275233107532723,0.5275233107532723,0.5275233107532723,0.5275233107532723,0.5225513675654392,0.520045960615353,0.5150195753035172,0.5150195753035172,0.5022438680067345,0.4971068921620445,0.49452961537334494,0.48677438361673137,0.48677438361673137,0.4787509512136995,0.4787509512136995,0.476022495115674,0.47328180940405196,0.47043032036004545,0.4675654820440702,0.46177734509492857,0.45574439406183925,0.45259078067536684,0.4493985232997935,0.4493985232997935,0.44621156635858794,0.44293783556490984,0.4297057334260747,0.4263100347869047,0.42278254637341905,0.42278254637341905,0.42278254637341905,0.41891423262428484,0.41891423262428484,0.41891423262428484,0.41891423262428484,0.41891423262428484,0.41891423262428484,0.4141577664305228,0.4141577664305228,0.4092569029267162,0.3992861352264153,0.3992861352264153,0.3992861352264153,0.3939471038850891,0.3939471038850891,0.3939471038850891,0.38194946198302937,0.3760044684184457,0.36950476816387534,0.3629395513115277,0.3629395513115277,0.3629395513115277,0.3629395513115277,0.3629395513115277,0.3556709854020099,0.348321167839906,0.348321167839906,0.348321167839906,0.348321167839906],"hi":[1.0,0.9975425011355558,0.9953449974612854,0.9934384050564116,0.9924521169074647,0.9867168087995086,0.9850863564177138,0.9788751723004637,0.9724614739206863,0.9688798147984156,0.9682709011349204,0.963965681782761,0.9577050355671779,0.9526157030686859,0.9468081551201506,0.9454954283882282,0.9408090956283381,0.9367327841049978,0.9332817742254531,0.9297861688334154,0.9262501732377229,0.9176581291592023,0.9096305829896358,0.9066579029165694,0.8983909310456829,0.8953516283238846,0.8899730218171604,0.886876085332379,0.8845310970953708,0.8757970102575215,0.8749887133862664,0.870098706600429,0.8676292595802357,0.8651302088810853,0.8634342871336724,0.8582917072331133,0.8530716090569974,0.844278565800328,0.8398176435012664,0.8371037700947997,0.8334559947456668,0.829787241917352,0.8251627187227099,0.8223577122461934,0.8195187484716504,0.8138048757776537,0.8099464613594738,0.8060564868665736,0.796250091787248,0.7932845075822348,0.7882863914060348,0.781207266875103,0.7750740815346153,0.7688687116584861,0.7678214558011025,0.7625415160015449,0.7517917912821429,0.7496034620331389,0.7440352871794848,0.7406520815814958,0.7349518950222959,0.732653594952145,0.7280162498654219,0.7233070448614064,0.7185198496024288,0.7124967374349578,0.7100536969121308,0.7088177848151752,0.7075771235438302,0.702583910179876,0.7013233331570276,0.6961362716677791,0.6948137996337752,0.6920922077665486,0.6865495486060282,0.6837462023370143,0.6780293839429741,0.6765857278258223,0.6735911079292369,0.672053529120947,0.6689402865362097,0.6642234341901644,0.6610380762502439,0.6561770125164823,0.649592615973328,0.6462565716734823,0.644578375700739,0.6377667302609057,0.6377667302609057,0.6360240584789806,0.6306721066452902,0.628854961873165,0.62699918644778,0.62699918644778,0.623176408080136,0.6113493383185925,0.6033619343175355,0.6013543106245154,0.5972798284595376,0.5972798284595376,0.5972798284595376,0.5972798284595376,0.5929175066836895,0.5907168087863414,0.5862919923278487,0.5862919923278487,0.575010759017874,0.5704493579553127,0.5681560380350718,0.5612337443455772,0.5612337443455772,0.5540855608537472,0.5540855608537472,0.5516561354990764,0.549213265117781,0.5466898267530033,0.5441515889464184,0.5390179666967159,0.5336952627216994,0.5309330036262068,0.5281377041672245,0.5281377041672245,0.5253379123973144,0.5224734704554171,0.5108403623014334,0.5078530020748683,0.504771147732366,0.504771147732366,0.504771147732366,0.5014653258895324,0.5014653258895324,0.5014653258895324,0.5014653258895324,0.5014653258895324,0.5014653258895324,0.4976346774706565,0.4976346774706565,0.4937000538453725,0.48565430635017753,0.48565430635017753,0.48565430635017753,0.4814001964796673,0.4814001964796673,0.4814001964796673,0.4721109365123715,0.4674206366731938,0.46241365819117614,0.4573165816537333,0.4573165816537333,0.4573165816537333,0.4573165816537333,0.4573165816537333,0.4518342327390087,0.44623659488436007,0.44623659488436007,0.44623659488436007,0.44623659488436007],"n":[1639,1614,1590,1560,1538,1498,1471,1442,1418,1394,1380,1358,1338,1316,1300,1269,1243,1225,1206,1191,1176,1143,1120,1103,1081,1069,1050,1038,1023,997,988,973,960,942,927,910,891,873,858,843,834,826,814,801,792,780,766,758,743,732,721,707,692,680,670,660,638,623,608,599,588,581,573,558,549,540,527,523,519,510,498,483,471,457,449,439,426,413,400,393,385,376,370,360,351,347,340,332,328,322,311,304,297,292,287,274,267,265,259,254,250,241,238,236,233,230,223,219,218,213,209,203,201,198,193,189,185,178,171,166,163,163,162,156,150,144,139,137,130,128,126,120,116,115,112,106,103,100,95,94,92,88,86,82,80,73,71,69,69,67,66,65,62,60,57,55,54]}},"life":{"main":[{"연차":"1년차","시작 생존":18884,"퇴출":388,"퇴출률(%)":2.1},{"연차":"2년차","시작 생존":17247,"퇴출":545,"퇴출률(%)":3.3},{"연차":"3년차","시작 생존":15053,"퇴출":569,"퇴출률(%)":4.0},{"연차":"4년차","시작 생존":12846,"퇴출":527,"퇴출률(%)":4.4},{"연차":"5년차","시작 생존":10577,"퇴출":466,"퇴출률(%)":4.8},{"연차":"6년차","시작 생존":8340,"퇴출":367,"퇴출률(%)":4.8},{"연차":"7년차","시작 생존":6650,"퇴출":318,"퇴출률(%)":5.2},{"연차":"8년차","시작 생존":5346,"퇴출":265,"퇴출률(%)":5.3},{"연차":"9년차","시작 생존":4304,"퇴출":215,"퇴출률(%)":5.4},{"연차":"10년차","시작 생존":3484,"퇴출":151,"퇴출률(%)":4.8}],"sens":[{"연차":"1년차","시작 생존":18884,"퇴출":381,"퇴출률(%)":2.1},{"연차":"2년차","시작 생존":17247,"퇴출":517,"퇴출률(%)":3.2},{"연차":"3년차","시작 생존":15053,"퇴출":523,"퇴출률(%)":3.7},{"연차":"4년차","시작 생존":12846,"퇴출":461,"퇴출률(%)":3.9},{"연차":"5년차","시작 생존":10577,"퇴출":398,"퇴출률(%)":4.1},{"연차":"6년차","시작 생존":8340,"퇴출":317,"퇴출률(%)":4.1},{"연차":"7년차","시작 생존":6650,"퇴출":254,"퇴출률(%)":4.1},{"연차":"8년차","시작 생존":5346,"퇴출":211,"퇴출률(%)":4.3},{"연차":"9년차","시작 생존":4304,"퇴출":169,"퇴출률(%)":4.2},{"연차":"10년차","시작 생존":3484,"퇴출":109,"퇴출률(%)":3.5}]},"risk_table":[{"면적":"150㎡ 미만","기간":"개업 0~3년","퇴출":452,"노출_곳년":10057.360711841204,"발생률_100곳년":4.494220829405374,"CI_lo":4.089399722981895,"CI_hi":4.92827507823225,"지수":110.29251452249143},{"면적":"150㎡ 미만","기간":"개업 3년 이후","퇴출":586,"노출_곳년":9463.452429842573,"발생률_100곳년":6.192243310190637,"CI_lo":5.700968409536538,"CI_hi":6.714527454149913,"지수":151.96362420543602},{"면적":"150-300㎡","기간":"개업 0~3년","퇴출":498,"노출_곳년":16206.636550308009,"발생률_100곳년":3.0728152535174575,"CI_lo":2.808826683002856,"CI_hi":3.3549317816293596,"지수":75.40985052537972},{"면적":"150-300㎡","기간":"개업 3년 이후","퇴출":925,"노출_곳년":17124.45995893224,"발생률_100곳년":5.401630195745318,"CI_lo":5.059095333721853,"CI_hi":5.761253915608042,"지수":132.56121570870673},{"면적":"300-600㎡","기간":"개업 0~3년","퇴출":249,"노출_곳년":13179.253935660507,"발생률_100곳년":1.8893330473453755,"CI_lo":1.6619306295677347,"CI_hi":2.1391633096112224,"지수":46.36605553486638},{"면적":"300-600㎡","기간":"개업 3년 이후","퇴출":659,"노출_곳년":16111.664613278577,"발생률_100곳년":4.090204307361755,"CI_lo":3.7838394391764534,"CI_hi":4.414768812886197,"지수":100.3775593353165},{"면적":"600㎡ 이상","기간":"개업 0~3년","퇴출":83,"노출_곳년":5090.797399041752,"발생률_100곳년":1.6303929128199681,"CI_lo":1.2985988542825706,"CI_hi":2.021117316839861,"지수":40.011414845931206},{"면적":"600㎡ 이상","기간":"개업 3년 이후","퇴출":203,"노출_곳년":7110.905544147844,"발생률_100곳년":2.854770025275692,"CI_lo":2.475545272396355,"CI_hi":3.275654193828688,"지수":70.05881028608718},{"면적":"면적 결측","기간":"개업 0~3년","퇴출":220,"노출_곳년":3676.4250513347024,"발생률_100곳년":5.984074118963215,"CI_lo":5.219403617096761,"CI_hi":6.82924969843958,"지수":146.8549514414358},{"면적":"면적 결측","기간":"개업 3년 이후","퇴출":264,"노출_곳년":3554.0965092402457,"발생률_100곳년":7.428048149892106,"CI_lo":6.558961585461547,"CI_hi":8.380251953823722,"지수":182.29146709600738}],"cox_full":[{"모형":"main","변수":"개업시기: 2010-14","HR":1.1535986530127604,"CI_lo":1.0676990074444226,"CI_hi":1.2464091873777707,"p":0.0002955635008419867},{"모형":"main","변수":"개업시기: 2020-22","HR":0.8847319343116307,"CI_lo":0.8092741025329002,"CI_hi":0.9672255582390611,"p":0.00708957268326455},{"모형":"main","변수":"개업시기: 2023-26","HR":1.0480191097538092,"CI_lo":0.9250507175249951,"CI_hi":1.1873338765120076,"p":0.4614050524368821},{"모형":"main","변수":"면적: 150㎡ 미만","HR":1.2945425858551396,"CI_lo":1.1942507841650412,"CI_hi":1.4032567772305653,"p":3.503774459258113e-10},{"모형":"main","변수":"면적: 300-600㎡","HR":0.7022207925496239,"CI_lo":0.6459579369953767,"CI_hi":0.7633841357886298,"p":1.0730833068312838e-16},{"모형":"main","변수":"면적: 600㎡ 이상","HR":0.5205516850504346,"CI_lo":0.4582453117303214,"CI_hi":0.5913296871181429,"p":1.0454838305295825e-23},{"모형":"main","변수":"면적: 면적 결측","HR":1.6397611808897017,"CI_lo":1.478200661027058,"CI_hi":1.8189795210107618,"p":9.19651264395493e-21},{"모형":"main","변수":"경쟁: 1-2곳","HR":0.9673414967419911,"CI_lo":0.8654546175231234,"CI_hi":1.0812231541349815,"p":0.5587319428750626},{"모형":"main","변수":"경쟁: 3-5곳","HR":1.0724675564583663,"CI_lo":0.9619826832142317,"CI_hi":1.1956417508605346,"p":0.2072223047589531},{"모형":"main","변수":"경쟁: 6곳 이상","HR":1.192828771581816,"CI_lo":1.0685646694642537,"CI_hi":1.3315436294808003,"p":0.0016810935678277736},{"모형":"main","변수":"경쟁: 좌표 결측","HR":1.0555805621188161,"CI_lo":0.8723733711046329,"CI_hi":1.2772631077816703,"p":0.5781151378478859},{"모형":"main","변수":"지역: 경기·인천","HR":1.0941502886301613,"CI_lo":1.0183829339694312,"CI_hi":1.1755547095071412,"p":0.013991586989944797},{"모형":"main","변수":"지역: 서울","HR":0.7492032937445783,"CI_lo":0.6882867532312548,"CI_hi":0.8155112280202986,"p":2.5008218039414366e-11},{"모형":"sens","변수":"개업시기: 2010-14","HR":1.091278385202972,"CI_lo":1.0024916051339507,"CI_hi":1.1879286648510956,"p":0.04364975009315522},{"모형":"sens","변수":"개업시기: 2020-22","HR":0.9137032654450794,"CI_lo":0.8322769233449462,"CI_hi":1.0030960055094391,"p":0.058085171202514566},{"모형":"sens","변수":"개업시기: 2023-26","HR":1.0637589209985259,"CI_lo":0.9353916359975055,"CI_hi":1.2097425275747982,"p":0.3461808455371209},{"모형":"sens","변수":"면적: 150㎡ 미만","HR":1.3289044427453496,"CI_lo":1.219398933673202,"CI_hi":1.4482438594797158,"p":9.125757125161413e-11},{"모형":"sens","변수":"면적: 300-600㎡","HR":0.6999592459877872,"CI_lo":0.6394553399732945,"CI_hi":0.7661879030742836,"p":1.0431575056695233e-14},{"모형":"sens","변수":"면적: 600㎡ 이상","HR":0.5133117609117314,"CI_lo":0.4464522380875088,"CI_hi":0.5901839915038262,"p":7.52791143378815e-21},{"모형":"sens","변수":"면적: 면적 결측","HR":1.6330930585551746,"CI_lo":1.4607433317043248,"CI_hi":1.8257779310136413,"p":6.7358012556726855e-18},{"모형":"sens","변수":"경쟁: 1-2곳","HR":0.9340139256157651,"CI_lo":0.8285119111021931,"CI_hi":1.052950478507445,"p":0.2643116682692467},{"모형":"sens","변수":"경쟁: 3-5곳","HR":1.006603942436339,"CI_lo":0.8951986311344168,"CI_hi":1.1318733761292337,"p":0.912417283169339},{"모형":"sens","변수":"경쟁: 6곳 이상","HR":1.1648222239679664,"CI_lo":1.0355603620463558,"CI_hi":1.3102189531168469,"p":0.011015591209649182},{"모형":"sens","변수":"경쟁: 좌표 결측","HR":1.0974921278919336,"CI_lo":0.8979805030838186,"CI_hi":1.3413308714925805,"p":0.3634709964641831},{"모형":"sens","변수":"지역: 경기·인천","HR":1.0616969177807243,"CI_lo":0.982292186334132,"CI_hi":1.147520423054314,"p":0.13117381587571034},{"모형":"sens","변수":"지역: 서울","HR":0.7763988478558866,"CI_lo":0.709228023255141,"CI_hi":0.8499314059606693,"p":4.2099329994968013e-08}],"ph":[{"모형":"main","변수":"개업시기: 2010-14","chi2":0.0004567766912982015,"p":0.9829486422205432},{"모형":"main","변수":"개업시기: 2020-22","chi2":8.026723439030722,"p":0.004609214589066493},{"모형":"main","변수":"개업시기: 2023-26","chi2":1.2433918346784347,"p":0.26481836449816365},{"모형":"main","변수":"면적: 150㎡ 미만","chi2":5.787373328334758,"p":0.01614168982184656},{"모형":"main","변수":"면적: 300-600㎡","chi2":6.411853808492719,"p":0.011336100247153494},{"모형":"main","변수":"면적: 600㎡ 이상","chi2":0.2906944370090274,"p":0.5897758620604581},{"모형":"main","변수":"면적: 면적 결측","chi2":14.062741547986116,"p":0.00017681186019669794},{"모형":"main","변수":"경쟁: 1-2곳","chi2":0.9055130616607076,"p":0.3413077451859025},{"모형":"main","변수":"경쟁: 3-5곳","chi2":0.02925265651905591,"p":0.8641969684400275},{"모형":"main","변수":"경쟁: 6곳 이상","chi2":0.39154180856644627,"p":0.5314900731883618},{"모형":"main","변수":"경쟁: 좌표 결측","chi2":0.2058036607442338,"p":0.6500765243958452},{"모형":"main","변수":"지역: 경기·인천","chi2":1.876480013828852,"p":0.1707347570197228},{"모형":"main","변수":"지역: 서울","chi2":0.8579206193869244,"p":0.3543212463877454},{"모형":"sens","변수":"개업시기: 2010-14","chi2":1.613724044268771,"p":0.20396910536169285},{"모형":"sens","변수":"개업시기: 2020-22","chi2":10.259529051032032,"p":0.0013598038847516295},{"모형":"sens","변수":"개업시기: 2023-26","chi2":1.26381342547451,"p":0.26093049360946935},{"모형":"sens","변수":"면적: 150㎡ 미만","chi2":5.003514290297122,"p":0.025295906177815724},{"모형":"sens","변수":"면적: 300-600㎡","chi2":9.543816348527752,"p":0.0020062416159930966},{"모형":"sens","변수":"면적: 600㎡ 이상","chi2":0.7227593597133476,"p":0.395240278084078},{"모형":"sens","변수":"면적: 면적 결측","chi2":13.315908227700717,"p":0.0002631638259170198},{"모형":"sens","변수":"경쟁: 1-2곳","chi2":1.1490259751919494,"p":0.28375313995360274},{"모형":"sens","변수":"경쟁: 3-5곳","chi2":0.2577053575980635,"p":0.6117010055773616},{"모형":"sens","변수":"경쟁: 6곳 이상","chi2":0.6227817546015332,"p":0.43001544313344675},{"모형":"sens","변수":"경쟁: 좌표 결측","chi2":0.04312293504481937,"p":0.835493964362849},{"모형":"sens","변수":"지역: 경기·인천","chi2":1.755566063385859,"p":0.18517852798245574},{"모형":"sens","변수":"지역: 서울","chi2":0.7164638694613178,"p":0.397306279330338}],"cox_period":[{"모형":"main_0-3년","변수":"개업시기: 2010-14","HR":1.1213394904733476,"CI_lo":0.966042353496418,"CI_hi":1.3016015792103564,"p":0.1321342468798994},{"모형":"main_0-3년","변수":"개업시기: 2020-22","HR":0.7462299565922769,"CI_lo":0.65186853960653,"CI_hi":0.8542506874957233,"p":2.1976300729565325e-05},{"모형":"main_0-3년","변수":"개업시기: 2023-26","HR":0.9818123026603931,"CI_lo":0.8527314124800507,"CI_hi":1.1304326116611245,"p":0.7985492542120484},{"모형":"main_0-3년","변수":"면적: 150㎡ 미만","HR":1.486228378324539,"CI_lo":1.307202371815791,"CI_hi":1.6897726321203925,"p":1.4423403116561247e-09},{"모형":"main_0-3년","변수":"면적: 300-600㎡","HR":0.6062615831297432,"CI_lo":0.5205083865812351,"CI_hi":0.7061425265270322,"p":1.2628397310617767e-10},{"모형":"main_0-3년","변수":"면적: 600㎡ 이상","HR":0.518320355223503,"CI_lo":0.4106462078792879,"CI_hi":0.6542273750108305,"p":3.179687447362206e-08},{"모형":"main_0-3년","변수":"면적: 면적 결측","HR":1.970365647789006,"CI_lo":1.6800452011973432,"CI_hi":2.310854959866617,"p":7.467727813748769e-17},{"모형":"main_0-3년","변수":"경쟁: 1-2곳","HR":0.9079283300675822,"CI_lo":0.743201741340663,"CI_hi":1.1091656634876705,"p":0.34433875073580267},{"모형":"main_0-3년","변수":"경쟁: 3-5곳","HR":1.0524846405842008,"CI_lo":0.8690745867961601,"CI_hi":1.2746016688271533,"p":0.6005551179710691},{"모형":"main_0-3년","변수":"경쟁: 6곳 이상","HR":1.1877192222521924,"CI_lo":0.9837741914733786,"CI_hi":1.4339438492430976,"p":0.07349034029522263},{"모형":"main_0-3년","변수":"경쟁: 좌표 결측","HR":1.0830842089509605,"CI_lo":0.7938943291470976,"CI_hi":1.4776165550132985,"p":0.6145356658940218},{"모형":"main_0-3년","변수":"지역: 경기·인천","HR":1.1780833901988523,"CI_lo":1.045361539125001,"CI_hi":1.3276559566407224,"p":0.007200721579913509},{"모형":"main_0-3년","변수":"지역: 서울","HR":0.8357085899525335,"CI_lo":0.7259773216752133,"CI_hi":0.9620257086114665,"p":0.01245370834114315},{"모형":"main_3년이후","변수":"개업시기: 2010-14","HR":1.1668541426792076,"CI_lo":1.065754036972649,"CI_hi":1.2775448584320683,"p":0.0008463276934095633},{"모형":"main_3년이후","변수":"개업시기: 2020-22","HR":1.0258324968502617,"CI_lo":0.9100553800876138,"CI_hi":1.1563387620352628,"p":0.6763711497128291},{"모형":"main_3년이후","변수":"개업시기: 2023-26","HR":0.8862332177509775,"CI_lo":0.5405240192811274,"CI_hi":1.4530516466036247,"p":0.6321146786500402},{"모형":"main_3년이후","변수":"면적: 150㎡ 미만","HR":1.17878947160329,"CI_lo":1.0620739097140295,"CI_hi":1.3083313747316399,"p":0.0019878251114147615},{"모형":"main_3년이후","변수":"면적: 300-600㎡","HR":0.7449931847206541,"CI_lo":0.6739470477985611,"CI_hi":0.823528861938295,"p":8.568383114195677e-09},{"모형":"main_3년이후","변수":"면적: 600㎡ 이상","HR":0.5191775284965571,"CI_lo":0.4457431077399233,"CI_hi":0.6047099807386462,"p":3.6203980498779173e-17},{"모형":"main_3년이후","변수":"면적: 면적 결측","HR":1.4403718131469447,"CI_lo":1.255091619968141,"CI_hi":1.6530035951964053,"p":2.056830902397455e-07},{"모형":"main_3년이후","변수":"경쟁: 1-2곳","HR":0.9953731285562638,"CI_lo":0.8706076349386843,"CI_hi":1.1380185806912464,"p":0.9458893004831264},{"모형":"main_3년이후","변수":"경쟁: 3-5곳","HR":1.0883402066334862,"CI_lo":0.9536166332586986,"CI_hi":1.2420970482943436,"p":0.20927697655488375},{"모형":"main_3년이후","변수":"경쟁: 6곳 이상","HR":1.2008158567913927,"CI_lo":1.0478937312887862,"CI_hi":1.3760543448887765,"p":0.008461408927464928},{"모형":"main_3년이후","변수":"경쟁: 좌표 결측","HR":1.0436557711552266,"CI_lo":0.8188531515131785,"CI_hi":1.3301742402197752,"p":0.729913011383521},{"모형":"main_3년이후","변수":"지역: 경기·인천","HR":1.0480924544752706,"CI_lo":0.957888577842469,"CI_hi":1.146790783957602,"p":0.30632085358395933},{"모형":"main_3년이후","변수":"지역: 서울","HR":0.7063905745322957,"CI_lo":0.6350645728711817,"CI_hi":0.7857274127764687,"p":1.5507549946680166e-10},{"모형":"sens_0-3년","변수":"개업시기: 2010-14","HR":1.122991958852942,"CI_lo":0.9626740515295974,"CI_hi":1.3100082396991823,"p":0.13996043088068114},{"모형":"sens_0-3년","변수":"개업시기: 2020-22","HR":0.756349065010875,"CI_lo":0.6580917218718741,"CI_hi":0.8692768638931482,"p":8.38587947767553e-05},{"모형":"sens_0-3년","변수":"개업시기: 2023-26","HR":0.9982449428044177,"CI_lo":0.8638683286124906,"CI_hi":1.1535241342105003,"p":0.9810016189924641},{"모형":"sens_0-3년","변수":"면적: 150㎡ 미만","HR":1.5043079642612458,"CI_lo":1.319164080221681,"CI_hi":1.7154366809013883,"p":1.1031132545261157e-09},{"모형":"sens_0-3년","변수":"면적: 300-600㎡","HR":0.5920860038179264,"CI_lo":0.5055501569904942,"CI_hi":0.6934343330125268,"p":7.966857801224045e-11},{"모형":"sens_0-3년","변수":"면적: 600㎡ 이상","HR":0.49417420093342473,"CI_lo":0.3871311096402389,"CI_hi":0.6308150773393841,"p":1.52211016355117e-08},{"모형":"sens_0-3년","변수":"면적: 면적 결측","HR":1.9690276540326404,"CI_lo":1.6718766254446218,"CI_hi":2.3189928271855633,"p":4.762075902839634e-16},{"모형":"sens_0-3년","변수":"경쟁: 1-2곳","HR":0.8843627237967029,"CI_lo":0.7196756271521199,"CI_hi":1.0867360206931242,"p":0.24247395949135764},{"모형":"sens_0-3년","변수":"경쟁: 3-5곳","HR":1.0340125181414397,"CI_lo":0.8494627975508031,"CI_hi":1.258656518868041,"p":0.7387981687844491},{"모형":"sens_0-3년","변수":"경쟁: 6곳 이상","HR":1.1726700064461424,"CI_lo":0.9666707394327574,"CI_hi":1.4225680864462051,"p":0.10608358376933415},{"모형":"sens_0-3년","변수":"경쟁: 좌표 결측","HR":1.081292533148208,"CI_lo":0.7859787517860556,"CI_hi":1.4875638044733357,"p":0.6310636334287567},{"모형":"sens_0-3년","변수":"지역: 경기·인천","HR":1.1525915695310962,"CI_lo":1.0187336239983449,"CI_hi":1.304037969160341,"p":0.024156438212585403},{"모형":"sens_0-3년","변수":"지역: 서울","HR":0.8524892888109528,"CI_lo":0.7383131786473749,"CI_hi":0.984322112289561,"p":0.029603578293830476},{"모형":"sens_3년이후","변수":"개업시기: 2010-14","HR":1.0789675100198217,"CI_lo":0.974662370970357,"CI_hi":1.1944350396120718,"p":0.1428631201204389},{"모형":"sens_3년이후","변수":"개업시기: 2020-22","HR":1.1045665739797341,"CI_lo":0.9727933812732622,"CI_hi":1.2541895739015156,"p":0.12493245805727747},{"모형":"sens_3년이후","변수":"개업시기: 2023-26","HR":0.9718141846831351,"CI_lo":0.5826686572574983,"CI_hi":1.620857408044824,"p":0.91277121443192},{"모형":"sens_3년이후","변수":"면적: 150㎡ 미만","HR":1.206049309972021,"CI_lo":1.0756062158809627,"CI_hi":1.35231176299279,"p":0.0013368705938734589},{"모형":"sens_3년이후","변수":"면적: 300-600㎡","HR":0.7570786929023923,"CI_lo":0.6776514326245364,"CI_hi":0.8458155913976615,"p":8.602487206703311e-07},{"모형":"sens_3년이후","변수":"면적: 600㎡ 이상","HR":0.5211193353066643,"CI_lo":0.4395005429415507,"CI_hi":0.6178953951066567,"p":6.408404095254669e-14},{"모형":"sens_3년이후","변수":"면적: 면적 결측","HR":1.3919027931420636,"CI_lo":1.1932828339209895,"CI_hi":1.623582716924392,"p":2.5597191303823672e-05},{"모형":"sens_3년이후","변수":"경쟁: 1-2곳","HR":0.9607284469357396,"CI_lo":0.8290729341585727,"CI_hi":1.1132906536001097,"p":0.5941862792757711},{"모형":"sens_3년이후","변수":"경쟁: 3-5곳","HR":0.9959534766884935,"CI_lo":0.8603689447655813,"CI_hi":1.1529046158193912,"p":0.9566912006249279},{"모형":"sens_3년이후","변수":"경쟁: 6곳 이상","HR":1.1699622820406377,"CI_lo":1.0079208155256654,"CI_hi":1.3580548395400027,"p":0.03904732109496416},{"모형":"sens_3년이후","변수":"경쟁: 좌표 결측","HR":1.1207964039038014,"CI_lo":0.8651337286275309,"CI_hi":1.4520120270845698,"p":0.3879816154831166},{"모형":"sens_3년이후","변수":"지역: 경기·인천","HR":1.0042413343764172,"CI_lo":0.9082902411233269,"CI_hi":1.1103286284600666,"p":0.9341673166756568},{"모형":"sens_3년이후","변수":"지역: 서울","HR":0.733691098019824,"CI_lo":0.6528968102056133,"CI_hi":0.8244834695148998,"p":1.9693348022163657e-07}],"groups":{"개업시기":{"rows":[{"그룹":"2010-14","n":2788,"1년":96.4,"2년":93.3,"3년":89.9,"5년":82.0},{"그룹":"2015-19","n":4768,"1년":97.9,"2년":94.5,"3년":90.4,"5년":82.4},{"그룹":"2020-22","n":5194,"1년":98.7,"2년":95.9,"3년":92.3,"5년":83.6},{"그룹":"2023-26","n":6134,"1년":97.7,"2년":93.9,"3년":89.8,"5년":null}],"logrank":{"chi2":15.614954658387658,"df":3,"p":0.001359868636157213}},"면적":{"rows":[{"그룹":"150㎡ 미만","n":4042,"1년":97.1,"2년":92.4,"3년":86.9,"5년":77.1},{"그룹":"150-300㎡","n":6298,"1년":97.9,"2년":94.7,"3년":90.9,"5년":82.4},{"그룹":"300-600㎡","n":4964,"1년":98.9,"2년":97.0,"3년":94.3,"5년":87.6},{"그룹":"600㎡ 이상","n":1941,"1년":98.9,"2년":97.6,"3년":95.1,"5년":90.6},{"그룹":"면적 결측","n":1639,"1년":94.8,"2년":88.2,"3년":83.4,"5년":70.9}],"logrank":{"chi2":275.2388146809364,"df":3,"p":2.269943576693702e-59}},"경쟁":{"rows":[{"그룹":"0곳","n":1818,"1년":98.6,"2년":95.4,"3년":91.0,"5년":82.7},{"그룹":"1-2곳","n":3901,"1년":98.3,"2년":95.5,"3년":92.1,"5년":85.0},{"그룹":"3-5곳","n":4723,"1년":97.8,"2년":94.5,"3년":90.9,"5년":82.5},{"그룹":"6곳 이상","n":7785,"1년":97.5,"2년":94.0,"3년":90.2,"5년":81.6},{"그룹":"좌표 결측","n":657,"1년":97.7,"2년":93.7,"3년":89.4,"5년":80.0}],"logrank":{"chi2":12.653084062270409,"df":3,"p":0.005450179402604153}},"지역":{"rows":[{"그룹":"비수도권","n":7823,"1년":98.0,"2년":95.0,"3년":91.7,"5년":83.6},{"그룹":"경기·인천","n":6135,"1년":97.6,"2년":94.0,"3년":89.3,"5년":80.0},{"그룹":"서울","n":4926,"1년":97.9,"2년":94.7,"3년":91.2,"5년":84.3}],"logrank":{"chi2":38.109902423830064,"df":2,"p":5.303222342886506e-09}}},"batches":[{"상태":"폐업","N":3580,"묶음5건이상":118,"비율":3.2960893854748603,"중앙기간_년":3.8535249828884326},{"상태":"기타 퇴출 상태","N":559,"묶음5건이상":148,"비율":26.475849731663686,"중앙기간_년":6.247775496235455}],"calc_ref":[{"사례":"①","면적":"150㎡ 미만","개업_개월":12,"선납_개월":12,"선납금":600000,"퇴출확률":0.04833324186142074,"가정하_기대손실":12381.022716981703,"위험집단_평가끝":3105},{"사례":"②","면적":"600㎡ 이상","개업_개월":12,"선납_개월":12,"선납금":600000,"퇴출확률":0.013868540641307825,"가정하_기대손실":4495.916079444488,"위험집단_평가끝":1607},{"사례":"③","면적":"600㎡ 이상","개업_개월":36,"선납_개월":12,"선납금":600000,"퇴출확률":0.021681972124494076,"가정하_기대손실":5511.119576503836,"위험집단_평가끝":1186}],"temporal":{"rows":[{"면적":"150㎡ 미만","학습_n":1200,"검증_n":1751,"과거추정":[13.926243314871012,11.781308147095505,16.423954969117915],"실제":[10.569552672677274,9.21809667215907,12.1055837583825]},{"면적":"150-300㎡","학습_n":2054,"검증_n":2697,"과거추정":[9.884757986120341,8.466380623112013,11.525413783920301],"실제":[7.56857513918423,6.630800255652003,8.632732732035652]},{"면적":"300-600㎡","학습_n":1848,"검증_n":1996,"과거추정":[5.8224406265728,4.698092199342763,7.205529157972279],"실제":[5.161807956665654,4.2748775280192834,6.226686733364528]},{"면적":"600㎡ 이상","학습_n":770,"검증_n":707,"과거추정":[6.371740880489451,4.700521701529913,8.60974236030434],"실제":[3.5360678925035804,2.403203346721805,5.1885854542644605]},{"면적":"면적 결측","학습_n":571,"검증_n":516,"과거추정":[22.71886307518941,19.154523850203965,26.8290419678598],"실제":[12.632427912996725,10.04680936898933,15.822702056545534]}],"meta":{"학습":6443,"검증":7667,"순위상관_4군":0.7999999999999999,"검증_최근개업일":"2023-09-22","누수점검_학습사건중_2018이후":0,"검증제외_3년미만":4770,"학습에서뺀_2018이후폐업":1759,"과거추정_가중":10.289994779294219,"실제_가중":7.596326511653679,"차이_pp":-2.6936682676405397,"폐업만_과거추정_가중":9.757371776978895,"폐업만_실제_가중":7.253349483904674}},"robust":{"summary":[{"면적":"결측","구간":"이후","모형":12.0,"HR최소":1.2058798116,"HR최대":1.5637261106,"HR>1":12.0,"CI>1":12.0,"HR<1":0.0,"CI<1":0.0},{"면적":"결측","구간":"초반","모형":12.0,"HR최소":1.6571183834,"HR최대":2.4415860085,"HR>1":12.0,"CI>1":12.0,"HR<1":0.0,"CI<1":0.0},{"면적":"대형","구간":"이후","모형":12.0,"HR최소":0.5091350737,"HR최대":0.5944296808,"HR>1":0.0,"CI>1":0.0,"HR<1":12.0,"CI<1":12.0},{"면적":"대형","구간":"초반","모형":12.0,"HR최소":0.4053026816,"HR최대":0.6187062776,"HR>1":0.0,"CI>1":0.0,"HR<1":12.0,"CI<1":12.0},{"면적":"소형","구간":"이후","모형":12.0,"HR최소":1.1054509924,"HR최대":1.358586245,"HR>1":12.0,"CI>1":10.0,"HR<1":0.0,"CI<1":0.0},{"면적":"소형","구간":"초반","모형":12.0,"HR최소":1.3164093024,"HR최대":1.5560629969,"HR>1":12.0,"CI>1":12.0,"HR<1":0.0,"CI<1":0.0},{"면적":"중형","구간":"이후","모형":12.0,"HR최소":0.7068057603,"HR최대":0.773063826,"HR>1":0.0,"CI>1":0.0,"HR<1":12.0,"CI<1":12.0},{"면적":"중형","구간":"초반","모형":12.0,"HR최소":0.5099125264,"HR최대":0.6863583355,"HR>1":0.0,"CI>1":0.0,"HR<1":12.0,"CI<1":12.0}],"grid":[{"경계":"125/250/500","분할":2,"구간":"초반","면적":"소형","HR":1.4003791709,"lo":1.1706055766,"hi":1.6752541262},{"경계":"125/250/500","분할":2,"구간":"초반","면적":"중형","HR":0.5446851278,"lo":0.4554624453,"hi":0.6513860616},{"경계":"125/250/500","분할":2,"구간":"초반","면적":"대형","HR":0.4053026816,"lo":0.3068147324,"hi":0.5354053972},{"경계":"125/250/500","분할":2,"구간":"초반","면적":"결측","HR":2.0062946664,"lo":1.6610478146,"hi":2.4233006739},{"경계":"125/250/500","분할":2,"구간":"이후","면적":"소형","HR":1.1922345707,"lo":1.0712223604,"hi":1.3269171034},{"경계":"125/250/500","분할":2,"구간":"이후","면적":"중형","HR":0.718398336,"lo":0.658686199,"hi":0.7835235806},{"경계":"125/250/500","분할":2,"구간":"이후","면적":"대형","HR":0.5108330762,"lo":0.4506944578,"hi":0.5789963183},{"경계":"125/250/500","분할":2,"구간":"이후","면적":"결측","HR":1.3206229369,"lo":1.1651095194,"hi":1.4968935646},{"경계":"125/250/500","분할":3,"구간":"초반","면적":"소형","HR":1.3838285163,"lo":1.201230015,"hi":1.5941837438},{"경계":"125/250/500","분할":3,"구간":"초반","면적":"중형","HR":0.5906303296,"lo":0.5151795249,"hi":0.6771313093},{"경계":"125/250/500","분할":3,"구간":"초반","면적":"대형","HR":0.4504584064,"lo":0.3653245402,"hi":0.5554315507},{"경계":"125/250/500","분할":3,"구간":"초반","면적":"결측","HR":1.7291186388,"lo":1.4761886746,"hi":2.0253855882},{"경계":"125/250/500","분할":3,"구간":"이후","면적":"소형","HR":1.1486513129,"lo":1.0176992743,"hi":1.2964535515},{"경계":"125/250/500","분할":3,"구간":"이후","면적":"중형","HR":0.7302219596,"lo":0.6639402092,"hi":0.8031206771},{"경계":"125/250/500","분할":3,"구간":"이후","면적":"대형","HR":0.5091350737,"lo":0.4442704919,"hi":0.5834700436},{"경계":"125/250/500","분할":3,"구간":"이후","면적":"결측","HR":1.3419562723,"lo":1.1687219712,"hi":1.5408682997},{"경계":"125/250/500","분할":4,"구간":"초반","면적":"소형","HR":1.3164093024,"lo":1.1636399728,"hi":1.4892350658},{"경계":"125/250/500","분할":4,"구간":"초반","면적":"중형","HR":0.6023980421,"lo":0.536679732,"hi":0.676163789},{"경계":"125/250/500","분할":4,"구간":"초반","면적":"대형","HR":0.4450546155,"lo":0.3720872228,"hi":0.5323311273},{"경계":"125/250/500","분할":4,"구간":"초반","면적":"결측","HR":1.6571183834,"lo":1.4427909258,"hi":1.9032843135},{"경계":"125/250/500","분할":4,"구간":"이후","면적":"소형","HR":1.1546865288,"lo":1.0060415073,"hi":1.3252942051},{"경계":"125/250/500","분할":4,"구간":"이후","면적":"중형","HR":0.7565187318,"lo":0.6803114877,"hi":0.8412625716},{"경계":"125/250/500","분할":4,"구간":"이후","면적":"대형","HR":0.5275956577,"lo":0.4546230118,"hi":0.6122813205},{"경계":"125/250/500","분할":4,"구간":"이후","면적":"결측","HR":1.3158996919,"lo":1.1242298418,"hi":1.5402473185},{"경계":"125/250/500","분할":5,"구간":"초반","면적":"소형","HR":1.3194841025,"lo":1.1791114993,"hi":1.4765679904},{"경계":"125/250/500","분할":5,"구간":"초반","면적":"중형","HR":0.6282296598,"lo":0.5665805817,"hi":0.6965867138},{"경계":"125/250/500","분할":5,"구간":"초반","면적":"대형","HR":0.4628362117,"lo":0.3948250161,"hi":0.5425627813},{"경계":"125/250/500","분할":5,"구간":"초반","면적":"결측","HR":1.6705209981,"lo":1.4726535145,"hi":1.894974193},{"경계":"125/250/500","분할":5,"구간":"이후","면적":"소형","HR":1.1054509924,"lo":0.9422381646,"hi":1.2969352574},{"경계":"125/250/500","분할":5,"구간":"이후","면적":"중형","HR":0.7600186826,"lo":0.6744848854,"hi":0.8563993209},{"경계":"125/250/500","분할":5,"구간":"이후","면적":"대형","HR":0.5237436228,"lo":0.444087465,"hi":0.6176877395},{"경계":"125/250/500","분할":5,"구간":"이후","면적":"결측","HR":1.2058798116,"lo":1.0027996696,"hi":1.4500863574},{"경계":"150/300/600","분할":2,"구간":"초반","면적":"소형","HR":1.4658069516,"lo":1.2446144426,"hi":1.7263097276},{"경계":"150/300/600","분할":2,"구간":"초반","면적":"중형","HR":0.5556023425,"lo":0.4547395991,"hi":0.6788367752},{"경계":"150/300/600","분할":2,"구간":"초반","면적":"대형","HR":0.4410429629,"lo":0.3213845916,"hi":0.6052527102},{"경계":"150/300/600","분할":2,"구간":"초반","면적":"결측","HR":2.2749035308,"lo":1.8804452118,"hi":2.7521068106},{"경계":"150/300/600","분할":2,"구간":"이후","면적":"소형","HR":1.2428210269,"lo":1.1325706064,"hi":1.3638038071},{"경계":"150/300/600","분할":2,"구간":"이후","면적":"중형","HR":0.7364523426,"lo":0.6715927038,"hi":0.8075758564},{"경계":"150/300/600","분할":2,"구간":"이후","면적":"대형","HR":0.537460379,"lo":0.4674607903,"hi":0.617942007},{"경계":"150/300/600","분할":2,"구간":"이후","면적":"결측","HR":1.4350628492,"lo":1.2663739928,"hi":1.6262221057},{"경계":"150/300/600","분할":3,"구간":"초반","면적":"소형","HR":1.4862283783,"lo":1.3071992887,"hi":1.6897766175},{"경계":"150/300/600","분할":3,"구간":"초반","면적":"중형","HR":0.6062615831,"lo":0.5205069279,"hi":0.7061445054},{"경계":"150/300/600","분할":3,"구간":"초반","면적":"대형","HR":0.5183203552,"lo":0.4106444507,"hi":0.6542301744},{"경계":"150/300/600","분할":3,"구간":"초반","면적":"결측","HR":1.9703656478,"lo":1.6800402803,"hi":2.3108617285},{"경계":"150/300/600","분할":3,"구간":"이후","면적":"소형","HR":1.1787894716,"lo":1.0620718749,"hi":1.3083338814},{"경계":"150/300/600","분할":3,"구간":"이후","면적":"중형","HR":0.7449931847,"lo":0.6739458066,"hi":0.8235303786},{"경계":"150/300/600","분할":3,"구간":"이후","면적":"대형","HR":0.5191775285,"lo":0.4457418586,"hi":0.6047116753},{"경계":"150/300/600","분할":3,"구간":"이후","면적":"결측","HR":1.4403718131,"lo":1.2550884444,"hi":1.6530077776},{"경계":"150/300/600","분할":4,"구간":"초반","면적":"소형","HR":1.3974801545,"lo":1.2508619118,"hi":1.5612840745},{"경계":"150/300/600","분할":4,"구간":"초반","면적":"중형","HR":0.6144704186,"lo":0.540615231,"hi":0.6984152013},{"경계":"150/300/600","분할":4,"구간":"초반","면적":"대형","HR":0.4936794055,"lo":0.4038880177,"hi":0.6034329932},{"경계":"150/300/600","분할":4,"구간":"초반","면적":"결측","HR":1.8619132375,"lo":1.6199160149,"hi":2.1400621218},{"경계":"150/300/600","분할":4,"구간":"이후","면적":"소형","HR":1.181963367,"lo":1.0502184458,"hi":1.3302350634},{"경계":"150/300/600","분할":4,"구간":"이후","면적":"중형","HR":0.773063826,"lo":0.6918610854,"hi":0.8637972155},{"경계":"150/300/600","분할":4,"구간":"이후","면적":"대형","HR":0.538596445,"lo":0.4563629103,"hi":0.635647911},{"경계":"150/300/600","분할":4,"구간":"이후","면적":"결측","HR":1.4082133353,"lo":1.2039920908,"hi":1.6470746052},{"경계":"150/300/600","분할":5,"구간":"초반","면적":"소형","HR":1.3911600053,"lo":1.2575428458,"hi":1.5389743313},{"경계":"150/300/600","분할":5,"구간":"초반","면적":"중형","HR":0.6596265127,"lo":0.5891158502,"hi":0.738576523},{"경계":"150/300/600","분할":5,"구간":"초반","면적":"대형","HR":0.504693062,"lo":0.4218855383,"hi":0.6037540131},{"경계":"150/300/600","분할":5,"구간":"초반","면적":"결측","HR":1.875496649,"lo":1.6523755229,"hi":2.1287459367},{"경계":"150/300/600","분할":5,"구간":"이후","면적":"소형","HR":1.1371237398,"lo":0.993412952,"hi":1.3016242612},{"경계":"150/300/600","분할":5,"구간":"이후","면적":"중형","HR":0.7522484929,"lo":0.664127435,"hi":0.8520620671},{"경계":"150/300/600","분할":5,"구간":"이후","면적":"대형","HR":0.5331098457,"lo":0.4442601608,"hi":0.6397289982},{"경계":"150/300/600","분할":5,"구간":"이후","면적":"결측","HR":1.2756050188,"lo":1.0619545163,"hi":1.5322390358},{"경계":"175/350/700","분할":2,"구간":"초반","면적":"소형","HR":1.47024724,"lo":1.2546144847,"hi":1.7229411688},{"경계":"175/350/700","분할":2,"구간":"초반","면적":"중형","HR":0.5099125264,"lo":0.4068708409,"hi":0.6390499355},{"경계":"175/350/700","분할":2,"구간":"초반","면적":"대형","HR":0.539586261,"lo":0.3843956491,"hi":0.7574313957},{"경계":"175/350/700","분할":2,"구간":"초반","면적":"결측","HR":2.4415860085,"lo":2.012595506,"hi":2.9620170666},{"경계":"175/350/700","분할":2,"구간":"이후","면적":"소형","HR":1.358586245,"lo":1.2453229335,"hi":1.4821509629},{"경계":"175/350/700","분할":2,"구간":"이후","면적":"중형","HR":0.7435581726,"lo":0.6735341663,"hi":0.8208622275},{"경계":"175/350/700","분할":2,"구간":"이후","면적":"대형","HR":0.5944296808,"lo":0.508028353,"hi":0.6955254434},{"경계":"175/350/700","분할":2,"구간":"이후","면적":"결측","HR":1.5637261106,"lo":1.3784872058,"hi":1.7738571231},{"경계":"175/350/700","분할":3,"구간":"초반","면적":"소형","HR":1.5560629969,"lo":1.3737116678,"hi":1.7626202841},{"경계":"175/350/700","분할":3,"구간":"초반","면적":"중형","HR":0.5966659071,"lo":0.5038071172,"hi":0.7066398875},{"경계":"175/350/700","분할":3,"구간":"초반","면적":"대형","HR":0.6187062776,"lo":0.4792249996,"hi":0.7987844086},{"경계":"175/350/700","분할":3,"구간":"초반","면적":"결측","HR":2.1653092769,"lo":1.8413760036,"hi":2.5462286114},{"경계":"175/350/700","분할":3,"구간":"이후","면적":"소형","HR":1.2862388952,"lo":1.1674887015,"hi":1.4170676713},{"경계":"175/350/700","분할":3,"구간":"이후","면적":"중형","HR":0.7424707078,"lo":0.6670420178,"hi":0.8264288265},{"경계":"175/350/700","분할":3,"구간":"이후","면적":"대형","HR":0.5680489601,"lo":0.4784738124,"hi":0.6743934834},{"경계":"175/350/700","분할":3,"구간":"이후","면적":"결측","HR":1.5554605778,"lo":1.3541232349,"hi":1.7867336935},{"경계":"175/350/700","분할":4,"구간":"초반","면적":"소형","HR":1.537972476,"lo":1.3814837353,"hi":1.7121876115},{"경계":"175/350/700","분할":4,"구간":"초반","면적":"중형","HR":0.6433408961,"lo":0.5589479021,"hi":0.7404760034},{"경계":"175/350/700","분할":4,"구간":"초반","면적":"대형","HR":0.5867228219,"lo":0.4690954934,"hi":0.7338456127},{"경계":"175/350/700","분할":4,"구간":"초반","면적":"결측","HR":2.0992850848,"lo":1.8215741363,"hi":2.4193348926},{"경계":"175/350/700","분할":4,"구간":"이후","면적":"소형","HR":1.2375647443,"lo":1.1094944767,"hi":1.3804183152},{"경계":"175/350/700","분할":4,"구간":"이후","면적":"중형","HR":0.7365441169,"lo":0.6544850957,"hi":0.8288916581},{"경계":"175/350/700","분할":4,"구간":"이후","면적":"대형","HR":0.5780323506,"lo":0.4804327751,"hi":0.6954592103},{"경계":"175/350/700","분할":4,"구간":"이후","면적":"결측","HR":1.4787975764,"lo":1.263729264,"hi":1.7304673826},{"경계":"175/350/700","분할":5,"구간":"초반","면적":"소형","HR":1.5305833643,"lo":1.3888278192,"hi":1.6868076825},{"경계":"175/350/700","분할":5,"구간":"초반","면적":"중형","HR":0.6863583355,"lo":0.6065023783,"hi":0.7767286354},{"경계":"175/350/700","분할":5,"구간":"초반","면적":"대형","HR":0.5690503336,"lo":0.4642347384,"hi":0.6975313466},{"경계":"175/350/700","분할":5,"구간":"초반","면적":"결측","HR":2.0987878114,"lo":1.8450579851,"hi":2.387410213},{"경계":"175/350/700","분할":5,"구간":"이후","면적":"소형","HR":1.1729070939,"lo":1.0355363949,"hi":1.3285009177},{"경계":"175/350/700","분할":5,"구간":"이후","면적":"중형","HR":0.7068057603,"lo":0.6192470766,"hi":0.8067448384},{"경계":"175/350/700","분할":5,"구간":"이후","면적":"대형","HR":0.5896948695,"lo":0.482773467,"hi":0.7202965012},{"경계":"175/350/700","분할":5,"구간":"이후","면적":"결측","HR":1.3296096863,"lo":1.1065338679,"hi":1.5976573056}],"early_gt_late_small":12}}</script>
+<script>
+(function(){
+"use strict";
+const D = JSON.parse(document.getElementById("portfolio-data").textContent);
+const NS = "http://www.w3.org/2000/svg";
+const AREAS = ["150㎡ 미만","150-300㎡","300-600㎡","600㎡ 이상"];
+const LABEL = {"150㎡ 미만":"150㎡ 미만","150-300㎡":"150~300㎡","300-600㎡":"300~600㎡","600㎡ 이상":"600㎡ 이상","면적 결측":"면적 결측","all":"전체"};
+const COLOR = {"150㎡ 미만":"var(--c-small)","150-300㎡":"var(--c-mid)","300-600㎡":"var(--c-large3)","600㎡ 이상":"var(--c-large)","면적 결측":"var(--c-na)","all":"var(--c-na)"};
+const MIN_N = 100;
+const MAX_M = D.months[D.months.length - 1];
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(p, x, y, s, cls, anchor){
+  const t = el("text", {x:x, y:y, class:cls || "axis", "text-anchor":anchor || "start"}, p);
+  t.textContent = s; return t;
+}
+const f1 = v => (v * 100).toFixed(1);
+const f2 = v => v.toFixed(2);
+const f3 = v => v.toFixed(3);
+const comma = v => Math.round(v).toLocaleString("ko-KR");
+const pfmt = p => p < 0.001 ? "<0.001" : p.toFixed(3);
+const niceVar = s => {
+  const [g, lv] = s.split(": ");
+  if (g === "면적") return lv === "면적 결측" ? "면적 결측" : "면적 " + (LABEL[lv] || lv);
+  if (g === "개업시기") return lv.replace("-", "~") + "년 개업";
+  if (g === "경쟁") return lv === "좌표 결측" ? "경쟁 좌표 결측" : "경쟁 " + lv.replace("-", "~");
+  return lv;
+};
+
+/* 툴팁 */
+const tip = document.getElementById("tip");
+function showTip(html, ev){
+  tip.innerHTML = html; tip.hidden = false;
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+function hideTip(){ tip.hidden = true; }
+function hover(t, html){
+  t.addEventListener("pointermove", ev => showTip(html, ev));
+  t.addEventListener("pointerdown", ev => showTip(html, ev));
+  t.addEventListener("pointerleave", hideTip);
+}
+function svgX(svg, ev){
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+}
+/* 너비에 맞춰 다시 그리기 */
+const mounts = [];
+function mount(host, draw){
+  const m = {host, draw, w:0};
+  m.render = () => { const w = Math.max(300, Math.round(host.clientWidth)); m.w = w; host.innerHTML = ""; draw(host, w); };
+  m.render(); mounts.push(m);
+}
+let rt;
+window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => {
+  mounts.forEach(m => { if (Math.abs(Math.max(300, Math.round(m.host.clientWidth)) - m.w) > 4) m.render(); });
+}, 150); });
+
+/* ---------- KM 곡선 ---------- */
+function kmChart(host, W, series, yMin, opts){
+  opts = opts || {};
+  const narrow = W < 560;
+  const H = narrow ? 250 : 320;
+  const m = {l:44, r: (opts.endLabels && !narrow) ? 92 : 14, t:12, b:40};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const X = mo => m.l + mo / MAX_M * iw;
+  const Y = v => m.t + (1 - v) / (1 - yMin) * ih;
+  const svg = el("svg", {viewBox:`0 0 ${W} ${H}`, width:W, height:H}, host);
+  for (let k = Math.round(yMin * 10); k <= 10; k++){
+    el("line", {x1:m.l, x2:m.l + iw, y1:Y(k/10), y2:Y(k/10), class:"grid"}, svg);
+    txt(svg, m.l - 6, Y(k/10) + 4, (k * 10) + "%", "axis", "end");
+  }
+  for (let yr = 0; yr <= 13; yr += (narrow ? 2 : 1)) txt(svg, X(yr * 12), H - m.b + 17, yr, "axis", "middle");
+  txt(svg, m.l + iw / 2, H - 5, "개업 후 경과 연수(년)", "axis", "middle");
+  series.forEach(s => {
+    if (s.lo){
+      const up = s.hi.map((v,i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`);
+      const dn = s.lo.map((v,i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).reverse();
+      el("polygon", {points: up.concat(dn).join(" "), style:`fill:${s.color};opacity:.13`}, svg);
+    }
+  });
+  series.forEach(s => {
+    const d = s.S.map((v,i) => (i ? "L" : "M") + X(i).toFixed(1) + "," + Y(v).toFixed(1)).join("");
+    el("path", {d:d, fill:"none", style:`stroke:${s.color};stroke-width:${s.width || 2.3};${s.dash ? "stroke-dasharray:6 5;" : ""}`}, svg);
+  });
+  if (opts.endLabels && !narrow){
+    const ends = series.map(s => ({s, y:Y(s.S[MAX_M])})).sort((a,b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i-1].y < 15) ends[i].y = ends[i-1].y + 15;
+    ends.forEach(e => { const t = txt(svg, m.l + iw + 6, e.y + 4, e.s.name, "lbl"); t.setAttribute("style", `fill:${e.s.color}`); });
+  }
+  const guide = el("line", {y1:m.t, y2:m.t + ih, class:"guide", visibility:"hidden"}, svg);
+  const hit = el("rect", {x:m.l, y:m.t, width:iw, height:ih, fill:"transparent"}, svg);
+  const move = ev => {
+    const mo = Math.max(0, Math.min(MAX_M, Math.round((svgX(svg, ev) - m.l) / iw * MAX_M)));
+    guide.setAttribute("x1", X(mo)); guide.setAttribute("x2", X(mo)); guide.setAttribute("visibility", "visible");
+    let h = `<b>개업 후 ${Math.floor(mo / 12)}년 ${mo % 12}개월</b>`;
+    series.forEach(s => { h += `<br>${s.name}: ${f1(s.S[mo])}%` + (s.lo ? ` (${f1(s.lo[mo])}~${f1(s.hi[mo])})` : "") + (s.n ? `, 위험집단 ${comma(s.n[mo])}곳` : ""); });
+    showTip(h, ev);
+  };
+  hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
+  hit.addEventListener("pointerleave", () => { guide.setAttribute("visibility", "hidden"); hideTip(); });
+}
+mount(document.getElementById("ch-km"), (h, W) => kmChart(h, W, [
+  {name:"주 분석", S:D.km.main.S, lo:D.km.main.lo, hi:D.km.main.hi, n:D.km.main.n, color:"var(--ink)"},
+  {name:"폐업만", S:D.km.sens.S, color:"var(--muted)", dash:true, width:1.8}
+], 0.5));
+mount(document.getElementById("ch-area"), (h, W) => kmChart(h, W,
+  AREAS.map(a => ({name:LABEL[a], S:D.km_area[a].S, lo:D.km_area[a].lo, hi:D.km_area[a].hi, n:D.km_area[a].n, color:COLOR[a]})),
+  0.4, {endLabels:true}));
+document.getElementById("lg-area").innerHTML = AREAS.map(a => `<span style="--lc:${COLOR[a]}">${LABEL[a]}</span>`).join("");
+
+const KM_T = [0, 1, 3, 5, 10, 13];
+(function(){
+  const k = D.km.main;
+  let h = "<caption>전체 시설의 시점별 생존확률과 위험집단</caption><thead><tr><th scope='col'>개업 후</th>" + KM_T.map(y => `<th class="r" scope="col">${y}년</th>`).join("") + "</tr></thead><tbody>";
+  h += "<tr><td>생존확률(95% CI)</td>" + KM_T.map(y => `<td class="r">${f1(k.S[y*12])}%<br><span class="note">${y === 0 ? "–" : f1(k.lo[y*12]) + "~" + f1(k.hi[y*12])}</span></td>`).join("") + "</tr>";
+  h += "<tr><td>위험집단(곳)</td>" + KM_T.map(y => `<td class="r">${comma(k.n[y*12])}</td>`).join("") + "</tr></tbody>";
+  document.getElementById("tbl-km").innerHTML = h;
+  const T2 = [3, 5, 10, 13];
+  let a = "<caption>면적군별 생존확률(95% CI)과 위험집단</caption><thead><tr><th scope='col'>면적</th><th class='r' scope='col'>시설 수</th>" + T2.map(y => `<th class="r" scope="col">${y}년</th>`).join("") + "</tr></thead><tbody>";
+  AREAS.concat(["면적 결측"]).forEach(g => {
+    const s = D.km_area[g];
+    a += `<tr><td>${LABEL[g]}</td><td class="r">${comma(s.n[0])}</td>` + T2.map(y => `<td class="r">${f1(s.S[y*12])}% <span class="note">(${f1(s.lo[y*12])}~${f1(s.hi[y*12])})</span><br><span class="note">위험집단 ${comma(s.n[y*12])}</span></td>`).join("") + "</tr>";
+  });
+  document.getElementById("tbl-area").innerHTML = a + "</tbody>";
+})();
+
+/* ---------- 연차별 조건부 퇴출 비율 ---------- */
+function lifeChart(host, W, key){
+  const rows = D.life[key];
+  const narrow = W < 560, H = narrow ? 230 : 270;
+  const m = {l:40, r:10, t:24, b:36}, iw = W - m.l - m.r, ih = H - m.t - m.b, yMax = 6;
+  const svg = el("svg", {viewBox:`0 0 ${W} ${H}`, width:W, height:H}, host);
+  const Y = v => m.t + (1 - v / yMax) * ih;
+  for (let v = 0; v <= yMax; v += 2){ el("line", {x1:m.l, x2:W - m.r, y1:Y(v), y2:Y(v), class:"grid"}, svg); txt(svg, m.l - 6, Y(v) + 4, v + "%", "axis", "end"); }
+  const bw = iw / rows.length;
+  rows.forEach((r, i) => {
+    const v = r["퇴출률(%)"], x = m.l + i * bw + bw * 0.16, w = bw * 0.68;
+    const bar = el("rect", {x:x, y:Y(v), width:w, height:Y(0) - Y(v), rx:2, style:"fill:var(--ink)"}, svg);
+    txt(svg, x + w / 2, Y(v) - 5, v.toFixed(1), "lbl", "middle");
+    txt(svg, x + w / 2, H - m.b + 16, narrow ? (i + 1) : (i + 1) + "년차", "axis", "middle");
+    hover(bar, `<b>${i + 1}년차</b><br>연초 영업 ${comma(r["시작 생존"])}곳<br>그해 퇴출 ${comma(r["퇴출"])}곳 (${v.toFixed(1)}%)`);
+  });
+}
+let lifeKey = "main";
+const lifeMount = document.getElementById("ch-life");
+mount(lifeMount, (h, W) => lifeChart(h, W, lifeKey));
+function bindSeg(attr, cb){
+  const btns = document.querySelectorAll(`[data-${attr}]`);
+  btns.forEach(b => b.addEventListener("click", () => {
+    btns.forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+    cb(b.dataset[attr]);
+  }));
+}
+bindSeg("life", k => { lifeKey = k; mounts.find(m => m.host === lifeMount).render(); });
+
+/* ---------- 기간별 위험비 ---------- */
+function logX(lo, hi, x0, w){ const a = Math.log(lo), b = Math.log(hi); return v => x0 + (Math.log(Math.max(lo, Math.min(hi, v))) - a) / (b - a) * w; }
+function logAxis(svg, X, y0, y1, ticks){
+  ticks.forEach(v => { el("line", {x1:X(v), x2:X(v), y1:y0, y2:y1, class: v === 1 ? "ref" : "grid"}, svg); txt(svg, X(v), y1 + 16, v, "axis", "middle"); });
+}
+let periodKey = "main";
+function periodChart(host, W){
+  const vars = ["면적: 150㎡ 미만", "면적: 300-600㎡", "면적: 600㎡ 이상", "면적: 면적 결측", "개업시기: 2010-14", "개업시기: 2020-22"];
+  const narrow = W < 560, labW = narrow ? 118 : 170, rowH = 40;
+  const m = {l:labW, r:narrow ? 12 : 120, t:8, b:40};
+  const H = m.t + m.b + vars.length * rowH, iw = W - m.l - m.r;
+  const X = logX(0.35, 2.5, m.l, iw);
+  const svg = el("svg", {viewBox:`0 0 ${W} ${H}`, width:W, height:H}, host);
+  logAxis(svg, X, m.t, H - m.b, [0.5, 0.75, 1, 1.5, 2]);
+  txt(svg, X(1), H - 5, "위험비(HR, 로그 척도)", "axis", "middle");
+  const get = (lab, v) => D.cox_period.find(r => r["모형"] === `${periodKey}_${lab}` && r["변수"] === v);
+  vars.forEach((v, i) => {
+    const y = m.t + i * rowH + rowH / 2;
+    const col = v.startsWith("면적") ? COLOR[v.split(": ")[1]] : "var(--ink)";
+    txt(svg, 2, y + 4, niceVar(v), "lbl");
+    const e = get("0-3년", v), l = get("3년이후", v);
+    [[e, -7, false], [l, 7, true]].forEach(([r, dy, filled]) => {
+      el("line", {x1:X(r.CI_lo), x2:X(r.CI_hi), y1:y + dy, y2:y + dy, style:`stroke:${col};stroke-width:2`}, svg);
+      el("circle", {cx:X(r.HR), cy:y + dy, r:5.5, style: filled ? `fill:${col}` : `fill:var(--panel);stroke:${col};stroke-width:2`}, svg);
+    });
+    if (!narrow) txt(svg, W - 4, y + 4, `${f2(e.HR)} → ${f2(l.HR)}`, "lbl", "end");
+    const hit = el("rect", {x:0, y:y - rowH / 2, width:W, height:rowH, fill:"transparent"}, svg);
+    hover(hit, `<b>${niceVar(v)}</b><br>0~3년 ${f3(e.HR)} (${f3(e.CI_lo)}~${f3(e.CI_hi)})<br>3년 이후 ${f3(l.HR)} (${f3(l.CI_lo)}~${f3(l.CI_hi)})`);
+  });
+}
+const periodMount = document.getElementById("ch-period");
+mount(periodMount, periodChart);
+bindSeg("period", k => { periodKey = k; mounts.find(m => m.host === periodMount).render(); });
+
+(function(){
+  const lab = {"main":"주 분석", "sens":"폐업만"};
+  let h = "<caption>전체 기간 Cox 모형 위험비(95% CI)</caption><thead><tr><th scope='col'>변수(기준 범주 대비)</th><th class='r' scope='col'>주 분석</th><th class='r' scope='col'>p</th><th class='r' scope='col'>폐업만</th><th class='r' scope='col'>p</th></tr></thead><tbody>";
+  const vars = [...new Set(D.cox_full.map(r => r["변수"]))];
+  vars.forEach(v => {
+    const a = D.cox_full.find(r => r["모형"] === "main" && r["변수"] === v), b = D.cox_full.find(r => r["모형"] === "sens" && r["변수"] === v);
+    h += `<tr><td>${niceVar(v)}</td><td class="r">${f2(a.HR)} (${f2(a.CI_lo)}~${f2(a.CI_hi)})</td><td class="r">${pfmt(a.p)}</td><td class="r">${f2(b.HR)} (${f2(b.CI_lo)}~${f2(b.CI_hi)})</td><td class="r">${pfmt(b.p)}</td></tr>`;
+  });
+  document.getElementById("tbl-coxfull").innerHTML = h + "</tbody>";
+  let p = "<caption>기간별 위험비(95% CI)</caption><thead><tr><th scope='col'>변수</th><th class='r' scope='col'>주 분석 0~3년</th><th class='r' scope='col'>주 분석 3년 이후</th><th class='r' scope='col'>폐업만 0~3년</th><th class='r' scope='col'>폐업만 3년 이후</th></tr></thead><tbody>";
+  vars.forEach(v => {
+    const c = k => { const r = D.cox_period.find(x => x["모형"] === k && x["변수"] === v); return `${f2(r.HR)} (${f2(r.CI_lo)}~${f2(r.CI_hi)})`; };
+    p += `<tr><td>${niceVar(v)}</td><td class="r">${c("main_0-3년")}</td><td class="r">${c("main_3년이후")}</td><td class="r">${c("sens_0-3년")}</td><td class="r">${c("sens_3년이후")}</td></tr>`;
+  });
+  document.getElementById("tbl-period").innerHTML = p + "</tbody>";
+  let q = "<caption>비례위험 검정(전체 기간 모형, 계수별 자유도 1)</caption><thead><tr><th scope='col'>변수</th><th class='r' scope='col'>주 분석 χ²</th><th class='r' scope='col'>p</th><th class='r' scope='col'>폐업만 χ²</th><th class='r' scope='col'>p</th></tr></thead><tbody>";
+  vars.forEach(v => {
+    const a = D.ph.find(r => r["모형"] === "main" && r["변수"] === v), b = D.ph.find(r => r["모형"] === "sens" && r["변수"] === v);
+    q += `<tr><td>${niceVar(v)}</td><td class="r">${f2(a.chi2)}</td><td class="r">${pfmt(a.p)}</td><td class="r">${f2(b.chi2)}</td><td class="r">${pfmt(b.p)}</td></tr>`;
+  });
+  document.getElementById("tbl-ph").innerHTML = q + "</tbody>";
+})();
+
+/* ---------- 시간 검증 ---------- */
+function temporalChart(host, W){
+  const rows = D.temporal.rows;
+  const narrow = W < 560, labW = narrow ? 100 : 130, rowH = 42;
+  const m = {l:labW, r:14, t:8, b:40}, H = m.t + m.b + rows.length * rowH, iw = W - m.l - m.r, xMax = 30;
+  const X = v => m.l + v / xMax * iw;
+  const svg = el("svg", {viewBox:`0 0 ${W} ${H}`, width:W, height:H}, host);
+  for (let v = 0; v <= xMax; v += (narrow ? 10 : 5)){ el("line", {x1:X(v), x2:X(v), y1:m.t, y2:H - m.b, class:"grid"}, svg); txt(svg, X(v), H - m.b + 16, v + "%", "axis", "middle"); }
+  txt(svg, m.l + iw / 2, H - 5, "개업 후 3년 누적 퇴출위험", "axis", "middle");
+  rows.forEach((r, i) => {
+    const y = m.t + i * rowH + rowH / 2, col = COLOR[r["면적"]];
+    txt(svg, 2, y + 4, LABEL[r["면적"]], "lbl");
+    const p = r["과거추정"], o = r["실제"];
+    [[p, -7, false], [o, 7, true]].forEach(([v, dy, filled]) => {
+      el("line", {x1:X(v[1]), x2:X(v[2]), y1:y + dy, y2:y + dy, style:`stroke:${col};stroke-width:2`}, svg);
+      el("circle", {cx:X(v[0]), cy:y + dy, r:5.5, style: filled ? `fill:${col}` : `fill:var(--panel);stroke:${col};stroke-width:2`}, svg);
+    });
+    const hit = el("rect", {x:0, y:y - rowH / 2, width:W, height:rowH, fill:"transparent"}, svg);
+    hover(hit, `<b>${LABEL[r["면적"]]}</b><br>2018년 말 기록 추정 ${p[0].toFixed(1)}% (${p[1].toFixed(1)}~${p[2].toFixed(1)}), ${comma(r["학습_n"])}곳<br>최근 실제 ${o[0].toFixed(1)}% (${o[1].toFixed(1)}~${o[2].toFixed(1)}), ${comma(r["검증_n"])}곳`);
+  });
+}
+mount(document.getElementById("ch-temporal"), temporalChart);
+(function(){
+  let h = "<caption>면적군별 3년 누적 퇴출위험(95% CI)</caption><thead><tr><th scope='col'>면적</th><th class='r' scope='col'>학습 시설</th><th class='r' scope='col'>2018년 말 기록 추정</th><th class='r' scope='col'>검증 시설</th><th class='r' scope='col'>최근 실제</th></tr></thead><tbody>";
+  D.temporal.rows.forEach(r => {
+    const p = r["과거추정"], o = r["실제"];
+    h += `<tr><td>${LABEL[r["면적"]]}</td><td class="r">${comma(r["학습_n"])}</td><td class="r">${p[0].toFixed(1)}% (${p[1].toFixed(1)}~${p[2].toFixed(1)})</td><td class="r">${comma(r["검증_n"])}</td><td class="r">${o[0].toFixed(1)}% (${o[1].toFixed(1)}~${o[2].toFixed(1)})</td></tr>`;
+  });
+  document.getElementById("tbl-temporal").innerHTML = h + "</tbody>";
+})();
+
+/* ---------- 강건성 ---------- */
+const RB_AREA = [["소형","소형(가장 작은 구간)","150㎡ 미만"],["중형","중형(세 번째 구간)","300-600㎡"],["대형","대형(가장 큰 구간)","600㎡ 이상"],["결측","면적 결측","면적 결측"]];
+function robustChart(host, W){
+  const narrow = W < 560, labW = narrow ? 116 : 190, rowH = 30, gap = 10;
+  const rows = []; RB_AREA.forEach(a => ["초반","이후"].forEach(p => rows.push([a, p])));
+  const m = {l:labW, r:14, t:8, b:40};
+  const H = m.t + m.b + rows.length * rowH + (RB_AREA.length - 1) * gap, iw = W - m.l - m.r;
+  const X = logX(0.35, 2.6, m.l, iw);
+  const svg = el("svg", {viewBox:`0 0 ${W} ${H}`, width:W, height:H}, host);
+  logAxis(svg, X, m.t, H - m.b, [0.5, 0.75, 1, 1.5, 2]);
+  txt(svg, X(1), H - 5, "위험비(HR, 로그 척도)", "axis", "middle");
+  rows.forEach(([a, p], i) => {
+    const y = m.t + i * rowH + Math.floor(i / 2) * gap + rowH / 2, col = COLOR[a[2]];
+    txt(svg, 2, y + 4, (narrow ? a[0] : a[1]) + " · " + (p === "초반" ? "초반" : "후반"), "lbl");
+    const pts = D.robust.grid.filter(r => r["면적"] === a[0] && r["구간"] === p);
+    pts.forEach((r, j) => {
+      const inc1 = r.lo <= 1 && r.hi >= 1;
+      const c = el("circle", {cx:X(r.HR), cy:y + ((j % 3) - 1) * 5, r:4.2, style: inc1 ? `fill:var(--panel);stroke:${col};stroke-width:1.8` : `fill:${col};opacity:.85`}, svg);
+      hover(c, `<b>${a[1]}, ${p === "초반" ? "분할 시점 이전" : "분할 시점 이후"}</b><br>경계 ${r["경계"]}㎡, 분할 ${r["분할"]}년<br>HR ${f3(r.HR)} (${f3(r.lo)}~${f3(r.hi)})`);
+    });
+  });
+}
+mount(document.getElementById("ch-robust"), robustChart);
+(function(){
+  let h = "<caption>24개 모형의 면적군별 위험비(95% CI). 기준은 각 경계안의 두 번째 구간</caption><thead><tr><th scope='col'>면적 경계(㎡)</th><th class='r' scope='col'>분할</th><th scope='col'>구간</th>" + RB_AREA.map(a => `<th class="r" scope="col">${a[0]}</th>`).join("") + "</tr></thead><tbody>";
+  ["125/250/500","150/300/600","175/350/700"].forEach(s => [2,3,4,5].forEach(c => ["초반","이후"].forEach(p => {
+    h += `<tr><td>${s}</td><td class="r">${c}년</td><td>${p === "초반" ? "이전" : "이후"}</td>`;
+    RB_AREA.forEach(a => { const r = D.robust.grid.find(x => x["경계"] === s && x["분할"] === c && x["구간"] === p && x["면적"] === a[0]); h += `<td class="r">${f2(r.HR)} (${f2(r.lo)}~${f2(r.hi)})</td>`; });
+    h += "</tr>";
+  })));
+  document.getElementById("tbl-robust").innerHTML = h + "</tbody>";
+})();
+
+/* ---------- 위험등급표 ---------- */
+(function(){
+  const areas = AREAS.concat(["면적 결측"]), periods = ["개업 0~3년", "개업 3년 이후"];
+  let h = "<caption>면적 × 개업 연차별 퇴출 발생률과 상대위험지수(전체 = 100)</caption><thead><tr><th scope='col'>면적</th>" + periods.map(p => `<th class="c" scope="col">${p}</th>`).join("") + "</tr></thead><tbody>";
+  areas.forEach(a => {
+    h += `<tr><th scope="row" style="color:var(--ink);font-size:.9rem">${LABEL[a]}</th>`;
+    periods.forEach(p => {
+      const r = D.risk_table.find(x => x["면적"] === a && x["기간"] === p), idx = r["지수"];
+      const bg = idx >= 100 ? `color-mix(in srgb, var(--c-small) ${Math.min(55, (idx - 100) * 0.55 + 8)}%, var(--panel))`
+                            : `color-mix(in srgb, var(--c-large) ${Math.min(40, (100 - idx) * 0.55)}%, var(--panel))`;
+      h += `<td class="cell" style="background:${bg}"><span class="idx">${Math.round(idx)}</span><span class="rt">100곳·년당 ${f2(r["발생률_100곳년"])}건 (${f2(r.CI_lo)}~${f2(r.CI_hi)})<br>퇴출 ${comma(r["퇴출"])}건, 노출 ${comma(r["노출_곳년"])}곳·년</span></td>`;
+    });
+    h += "</tr>";
+  });
+  document.getElementById("tbl-heat").innerHTML = h + "</tbody>";
+})();
+
+/* ---------- 계산기 ---------- */
+const CALC = {
+  curve(k){ return k === "all" ? D.km.main : D.km_area[k]; },
+  /* 반환: {ok, prob, loss, reason, nEnd} */
+  run(k, a, mo, P){
+    const c = CALC.curve(k), S = c.S;
+    if (!Number.isInteger(a) || !Number.isInteger(mo) || a < 0 || mo < 1) return {ok:false, reason:"입력 범위를 확인하세요."};
+    if (a + mo > MAX_M) return {ok:false, reason:`관측 범위(개업 후 ${MAX_M / 12}년)를 넘어 계산하지 않습니다.`};
+    if (c.n[a + mo] < MIN_N) return {ok:false, reason:`평가 끝 시점의 위험집단이 ${comma(c.n[a + mo])}곳으로 ${MIN_N}곳 미만이어서 계산하지 않습니다.`};
+    const s0 = S[a];
+    if (!(s0 > 0)) return {ok:false, reason:"생존확률이 0이어서 계산할 수 없습니다."};
+    let loss = 0;
+    for (let i = 1; i <= mo; i++) loss += (S[a + i - 1] - S[a + i]) / s0 * P * (mo - i + 0.5) / mo;
+    const prob = 1 - S[a + mo] / s0;
+    return {ok:true, prob, loss, nStart:c.n[a], nEnd:c.n[a + mo]};
+  }
+};
+window.__gymCalc = CALC.run;
+(function(){
+  const state = {area:"150㎡ 미만"};
+  const box = document.getElementById("areas");
+  AREAS.map(a => [a, LABEL[a]]).concat([["all", "전체"]]).forEach(([k, label]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "area-btn"; b.textContent = label; b.dataset.area = k;
+    b.style.setProperty("--pc", COLOR[k]); b.setAttribute("aria-pressed", String(k === state.area));
+    b.addEventListener("click", () => { state.area = k; box.querySelectorAll(".area-btn").forEach(o => o.setAttribute("aria-pressed", String(o === b))); update(); });
+    box.appendChild(b);
+  });
+  const age = document.getElementById("age"), months = document.getElementById("months"), price = document.getElementById("price");
+  const err = document.getElementById("price-err");
+  function readPrice(){
+    const raw = price.value.replace(/[,\s원]/g, "");
+    if (raw === "") return {ok:false, msg:"선납금을 입력하세요."};
+    if (!/^\d+(\.\d+)?$/.test(raw)) return {ok:false, msg:"선납금은 0 이상의 숫자로 입력하세요."};
+    const v = Number(raw);
+    if (!Number.isFinite(v) || v < 0) return {ok:false, msg:"선납금은 0 이상의 숫자로 입력하세요."};
+    if (v > 100000000) return {ok:false, msg:"1억 원 이하로 입력하세요."};
+    return {ok:true, v};
+  }
+  const calcMount = document.getElementById("ch-calc");
+  let last = null;
+  function drawCalc(host, W){
+    if (!last) return;
+    const c = CALC.curve(state.area), S = c.S;
+    const narrow = W < 560, H = narrow ? 170 : 190, m = {l:44, r:14, t:14, b:34}, iw = W - m.l - m.r, ih = H - m.t - m.b, yMin = 0.4;
+    const X = mo => m.l + mo / MAX_M * iw, Y = v => m.t + (1 - v) / (1 - yMin) * ih;
+    const svg = el("svg", {viewBox:`0 0 ${W} ${H}`, width:W, height:H}, host);
+    for (let k = 4; k <= 10; k += 2){ el("line", {x1:m.l, x2:m.l + iw, y1:Y(k / 10), y2:Y(k / 10), class:"grid"}, svg); txt(svg, m.l - 6, Y(k / 10) + 4, k * 10 + "%", "axis", "end"); }
+    for (let yr = 0; yr <= 13; yr += (narrow ? 2 : 1)) txt(svg, X(yr * 12), H - m.b + 16, yr, "axis", "middle");
+    txt(svg, m.l + iw / 2, H - 3, "개업 후 경과 연수(년)", "axis", "middle");
+    const a = last.a, e = Math.min(MAX_M, last.a + last.m);
+    el("rect", {x:X(a), y:m.t, width:Math.max(1, X(e) - X(a)), height:ih, style:"fill:#ffffff22"}, svg);
+    el("path", {d:S.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + "," + Y(v).toFixed(1)).join(""), fill:"none", style:`stroke:${COLOR[state.area]};stroke-width:2.4`}, svg);
+    const cap = document.getElementById("calc-cap");
+    if (last.ok){
+      [a, e].forEach(t => el("circle", {cx:X(t), cy:Y(S[t]), r:4.5, style:"fill:var(--calc-ink)"}, svg));
+      cap.textContent = `${LABEL[state.area]} 생존곡선. 음영은 선납 기간(개업 후 ${a}~${e}개월), 생존확률 ${f1(S[a])}% → ${f1(S[e])}%`;
+    } else { cap.textContent = `${LABEL[state.area]} 생존곡선. 선택한 기간은 계산 범위를 벗어났다.`; }
+  }
+  function update(){
+    const y = +age.value, mo = +months.value, a = y * 12;
+    document.getElementById("age-v").textContent = y === 0 ? "막 개업" : `${y}년 (${a}개월)`;
+    document.getElementById("months-v").textContent = mo + "개월";
+    const pr = readPrice();
+    price.setAttribute("aria-invalid", String(!pr.ok));
+    err.textContent = pr.ok ? "" : pr.msg;
+    const outP = document.getElementById("r-prob"), outL = document.getElementById("r-loss"), cmp = document.getElementById("r-cmp");
+    const r = CALC.run(state.area, a, mo, pr.ok ? pr.v : 0);
+    last = {a, m:mo, ok:r.ok && pr.ok};
+    if (!r.ok){ outP.textContent = "계산 불가"; outL.textContent = "–"; cmp.textContent = r.reason; }
+    else {
+      outP.textContent = f1(r.prob) + "%";
+      outL.textContent = pr.ok ? comma(r.loss) + "원" : "–";
+      const s = CALC.run("150㎡ 미만", a, mo, pr.ok ? pr.v : 0), l = CALC.run("600㎡ 이상", a, mo, pr.ok ? pr.v : 0);
+      const cmpTxt = (s.ok && l.ok) ? `같은 조건에서 150㎡ 미만은 <b>${f1(s.prob)}%</b>, 600㎡ 이상은 <b>${f1(l.prob)}%</b>` : "";
+      const basis = `근거: ${a === 0 ? "" : "개업 후 " + a + "개월 넘게 영업한 "}${LABEL[state.area]} 시설 ${comma(r.nStart)}곳, 평가 끝 시점 위험집단 ${comma(r.nEnd)}곳`;
+      cmp.innerHTML = (cmpTxt ? cmpTxt + "<br>" : "") + basis;
+    }
+    const mm = mounts.find(x => x.host === calcMount); if (mm) mm.render();
+  }
+  [age, months, price].forEach(i => i.addEventListener("input", update));
+  mount(calcMount, drawCalc);
+  update();
+})();
+})();
+</script>
+</body>
+</html>
