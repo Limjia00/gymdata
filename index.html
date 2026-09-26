@@ -346,7 +346,7 @@ footer code{font-size:.78rem;word-break:break-all}
     <div class="tbl-wrap"><table id="tbl-coxfull"></table></div>
     <div class="tbl-wrap"><table id="tbl-period"></table></div>
     <div class="tbl-wrap"><table id="tbl-ph"></table></div>
-    <p class="note">비례위험 검정 정의: Cox 적합은 Breslow 동점 처리. 순위는 사건이 발생한 행의 생존기간(동점 사건은 각각 한 행)에 매겼고 동점은 평균 순위(scipy.stats.rankdata 기본값). Schoenfeld 잔차는 사건 행마다 x_i − 위험집합의 exp(xβ) 가중평균 (Breslow, 비척도 잔차에 사건수×분산행렬을 곱해 척도화). Grambsch-Therneau 근사식(lifelines proportional_hazard_test와 같은 식). R survival 3.x의 cox.zph 정확 score 검정과는 다름. 개별 계수별 자유도 1 검정 (변수 묶음 검정 아님). 모든 계산은 직접 구현했고 표준 생존분석 라이브러리로는 재계산하지 못했다.</p>
+    <p class="note">비례위험 검정 정의: Cox 적합은 Breslow 동점 처리. 순위는 사건이 발생한 행의 생존기간(동점 사건은 각각 한 행)에 매겼고 동점은 평균 순위(scipy.stats.rankdata 기본값). Schoenfeld 잔차는 사건 행마다 x_i − 위험집합의 exp(xβ) 가중평균 (Breslow, 비척도 잔차에 사건수×분산행렬을 곱해 척도화). Grambsch-Therneau 근사식(lifelines proportional_hazard_test와 같은 식). R survival 3.x의 cox.zph 정확 score 검정과는 다름. 개별 계수별 자유도 1 검정 (변수 묶음 검정 아님). 모든 계산은 직접 구현했으며, 표준 생존분석 라이브러리를 활용한 재현 검증은 후속 검증 과제로 분리했다.</p>
   </details>
 </section>
 
